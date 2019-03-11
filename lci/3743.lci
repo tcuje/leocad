@@ -1,0 +1,28 @@
+<connector>
+  <name>Rack</name>
+  <matrix> 0 1 0 0 -1 0 0 0 0 0 -1 0 0 -5 0 1</matrix>
+  <parameters>
+    <radius>1.6</radius>
+    <tooth>10</tooth>
+  </parameters>
+</connector>
+
+<connector>
+  <name>studInlet</name>
+  <matrix>1 0 0 0 0 1 0 0 0 0 1 0 30 10 0 1</matrix>
+</connector>
+
+<connector>
+  <name>studInlet</name>
+  <matrix>1 0 0 0 0 1 0 0 0 0 1 0 10 10 0 1</matrix>
+</connector>
+
+<connector>
+  <name>studInlet</name>
+  <matrix>1 0 0 0 0 1 0 0 0 0 1 0 -10 10 0 1</matrix>
+</connector>
+
+<connector>
+  <name>studInlet</name>
+  <matrix>1 0 0 0 0 1 0 0 0 0 1 0 -30 10 0 1</matrix>
+</connector>

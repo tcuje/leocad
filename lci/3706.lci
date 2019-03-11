@@ -1,0 +1,10 @@
+<connector><name>axle</name><matrix>0 1 0 0 -1 0 0 0 0 0 1 0 60 0 0 1</matrix><parameters><lenght>60</lenght><id>0</id><brother>1</brother></parameters></connector>
+<connector>
+  <name>axle</name>
+  <matrix>0 1 0 0 1 0 0 0 0 0 -1 0 -60 0 0 1</matrix>
+  <parameters>
+    <lenght>60</lenght>
+    <id>1</id>
+    <brother>0</brother>
+  </parameters>
+</connector>

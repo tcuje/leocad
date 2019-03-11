@@ -1,0 +1,5 @@
+<connector><name>stud</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix></connector>
+<connector>
+  <name>studInlet</name>
+  <matrix>1 0 0 0 0 1 0 0 0 0 1 0 0 24 0 1</matrix>
+</connector>

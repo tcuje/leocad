@@ -1,0 +1,8 @@
+<connector>
+  <name>Spur</name>
+  <matrix> 0 1 0 0 -1 0 0 0 0 0 -1 0 0 0 0 1</matrix>
+  <parameters>
+    <radius>1.6</radius>
+    <tooth>14</tooth>
+  </parameters>
+</connector>

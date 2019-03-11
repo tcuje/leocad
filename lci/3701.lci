@@ -1,0 +1,62 @@
+<connector><name>stud</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 30 0 0 1</matrix></connector>
+<connector><name>stud</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 10 0 0 1></matrix></connector>
+<connector><name>stud</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 -10 0 0 1></matrix></connector>
+<connector><name>stud</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 -30 0 0 1></matrix></connector>
+<connector><name>studInlet</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 30 24 0 1</matrix></connector>
+<connector><name>studInlet</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 10 24 0 1</matrix></connector>
+<connector><name>studInlet</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 -10 24 0 1</matrix></connector>
+<connector><name>studInlet</name><matrix>1 0 0 0 0 1 0 0 0 0 1 0 -30 24 0 1</matrix></connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 20 10 10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>0</id>
+    <brother>1</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>1 0 0 0 0 0 -1 0 0 -1 0 0 20 10 -10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>1</id>
+    <brother>0</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 0 10 10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>2</id>
+    <brother>3</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>1 0 0 0 0 0 -1 0 0 -1 0 0 0 10 -10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>3</id>
+    <brother>2</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 -20 10 10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>4</id>
+    <brother>5</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>cylindricalHole</name>
+  <matrix>1 0 0 0 0 0 -1 0 0 -1 0 0 -20 10 -10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>5</id>
+    <brother>4</brother>
+  </parameters>
+</connector>

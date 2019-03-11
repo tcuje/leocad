@@ -1,0 +1,9 @@
+<connector>
+  <name>Bevel</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 0 0 2 1</matrix>
+  <parameters>
+    <radius>0.65</radius>
+    <tooth>12</tooth>
+  </parameters>
+</connector>
+

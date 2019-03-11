@@ -1,0 +1,28 @@
+<connector>
+  <name>Worm</name>
+  <matrix>-1 0 0 0 0 0 -1 0 0 1 0 0 0 0 0 1</matrix>
+  <parameters>
+    <radius>0.45</radius>
+    <tooth>6</tooth>
+  </parameters>
+</connector>
+
+<connector>
+  <name>axleHole</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 0 0 20 1</matrix>
+  <parameters>
+    <lenght>20</lenght>
+    <id>0</id>
+    <brother>1</brother>
+  </parameters>
+</connector>
+
+<connector>
+  <name>axleHole</name>
+  <matrix>1 0 0 0 0 0 -1 0 0 -1 0 0 0 0 -20 1</matrix>
+  <parameters>
+    <lenght>20</lenght>
+    <id>1</id>
+    <brother>0</brother>
+  </parameters>
+</connector>

@@ -1,0 +1,26 @@
+<connector>
+  <name>Spur</name>
+  <matrix>-1 0 0 0 0 0 -1 0 0 1 0 0 0 0 0 1</matrix>
+  <parameters>
+    <radius>0.82</radius>
+    <tooth>16</tooth>
+  </parameters>
+</connector>
+<connector>
+  <name>axleHole</name>
+  <matrix>-1 0 0 0 0 0 1 0 0 -1 0 0 0 0 10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>0</id>
+    <brother>1</brother>
+  </parameters>
+</connector>
+<connector>
+  <name>axleHole</name>
+  <matrix>1 0 0 0 0 0 -1 0 0 -1 0 0 0 0 -10 1</matrix>
+  <parameters>
+    <lenght>10</lenght>
+    <id>1</id>
+    <brother>0</brother>
+  </parameters>
+</connector>
