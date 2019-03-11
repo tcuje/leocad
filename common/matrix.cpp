@@ -8,6 +8,12 @@
 #include "matrix.h"
 #include "file.h"
 #include "defines.h"
+/**********FRAN*********/
+#include "utilidades.h"
+#include <stdlib.h>
+#include <afxwin.h>
+#include "globals.h"
+/**********FRAN*********/
 
 // =============================================================================
 // static functions
@@ -822,4 +828,182 @@ void Matrix::CreateLookat (const float *eye, const float *target, const float *u
   m[13] = m[1] * -eye[0] + m[5] * -eye[1] + m[9]  * -eye[2] + m[13];
   m[14] = m[2] * -eye[0] + m[6] * -eye[1] + m[10] * -eye[2] + m[14];
   m[15] = m[3] * -eye[0] + m[7] * -eye[1] + m[11] * -eye[2] + m[15];
+}
+
+/*************************FRAN********************************/
+
+/*void Matrix::crear(sirMat4d matriz)
+{
+	//Primer vector columna
+	m[0]=matriz[0][0];
+	m[1]=matriz[1][0];
+	m[2]=matriz[2][0];
+	m[3]=matriz[3][0];
+
+	//Segundo vector columna
+	m[4]=matriz[0][1];
+	m[5]=matriz[1][1];
+	m[6]=matriz[2][1];
+	m[7]=matriz[3][1];
+
+	//Tercer vector columna
+	m[8]=matriz[0][2];
+	m[9]=matriz[1][2];
+	m[10]=matriz[2][2];
+	m[11]=matriz[3][2];
+
+	//Cuarto vector columna
+	m[12]=matriz[0][3];
+	m[13]=matriz[1][3];
+	m[14]=matriz[2][3];
+	m[15]=matriz[3][3];
+}*/
+
+void Matrix::crear(double *matriz)
+{
+	//Primer vector columna
+	m[0]=(float)matriz[0];
+	m[1]=(float)matriz[1];
+	m[2]=(float)matriz[2];
+	m[3]=(float)matriz[3];
+
+	//Segundo vector columna
+	m[4]=(float)matriz[4];
+	m[5]=(float)matriz[5];
+	m[6]=(float)matriz[6];
+	m[7]=(float)matriz[7];
+
+	//Tercer vector columna
+	m[8]=(float)matriz[8];
+	m[9]=(float)matriz[9];
+	m[10]=(float)matriz[10];
+	m[11]=(float)matriz[11];
+
+	//Cuarto vector columna
+	m[12]=(float)matriz[12];
+	m[13]=(float)matriz[13];
+	m[14]=(float)matriz[14];
+	m[15]=(float)matriz[15];
+}
+
+/*************************************************************/
+
+void Matrix::crearx(float *matriz)
+{
+	//Primer vector columna
+	m[12]=matriz[0];
+	m[13]=matriz[1];
+	m[14]=matriz[2];
+	m[15]=matriz[3];
+
+	//Segundo vector columna
+	m[4]=matriz[4];
+	m[5]=matriz[5];
+	m[6]=matriz[6];
+	m[7]=matriz[7];
+
+	//Tercer vector columna
+	m[8]=matriz[8];
+	m[9]=matriz[9];
+	m[10]=matriz[10];
+	m[11]=matriz[11];
+
+	//Cuarto vector columna
+	m[0]=matriz[12];
+	m[1]=matriz[13];
+	m[2]=matriz[14];
+	m[3]=matriz[15];
+}
+
+/*************************************************************/
+
+void Matrix::modificarmat()
+{
+	//Primer vector columna
+	m[12]=-1;
+	m[13]=0;
+	m[14]=0;
+	m[15]=0;
+
+	//Segundo vector columna
+	m[4]=0;
+	m[5]=-1;
+	m[6]=0;
+	m[7]=0;
+
+	//Tercer vector columna
+	m[8]=0;
+	m[9]=0;
+	m[10]=1;
+	m[11]=0;
+
+	//Cuarto vector columna
+	m[0]=0.9;
+	m[1]=0;
+	m[2]=0;
+	m[3]=1;
+}
+
+void Matrix::imprimirMatrix()
+{
+	char cadena[500];
+	char r1[30],r2[30],r3[30],r4[30],r5[30],r6[30],r7[30],r8[30],r9[30],r10[30],r11[30],r12[30],r13[30],r14[30],r15[30],r16[30];
+
+	_gcvt(m[0],7,r1);
+	_gcvt(m[4],7,r2);
+	_gcvt(m[8],7,r3);
+	_gcvt(m[12],7,r4);
+	_gcvt(m[1],7,r5);
+	_gcvt(m[5],7,r6);
+	_gcvt(m[9],7,r7);
+	_gcvt(m[13],7,r8);
+	_gcvt(m[2],7,r9);
+	_gcvt(m[6],7,r10);
+	_gcvt(m[10],7,r11);
+	_gcvt(m[14],7,r12);
+	_gcvt(m[3],7,r13);
+	_gcvt(m[7],7,r14);
+	_gcvt(m[11],7,r15);
+	_gcvt(m[15],7,r16);
+	strcpy(cadena,"1 vcol-->");
+	strcat(cadena,"(");
+	strcat(cadena,r1);
+	strcat(cadena,",");
+	strcat(cadena,r2);
+	strcat(cadena,",");
+	strcat(cadena,r3);
+	strcat(cadena,",");
+	strcat(cadena,r4);
+	strcat(cadena,")");
+	strcat(cadena,"2 vcol-->");
+	strcat(cadena,"(");
+	strcat(cadena,r5);
+	strcat(cadena,",");
+	strcat(cadena,r6);
+	strcat(cadena,",");
+	strcat(cadena,r7);
+	strcat(cadena,",");
+	strcat(cadena,r8);
+	strcat(cadena,")");
+	strcat(cadena,"3 vcol-->");
+	strcat(cadena,"(");
+	strcat(cadena,r9);
+	strcat(cadena,",");
+	strcat(cadena,r10);
+	strcat(cadena,",");
+	strcat(cadena,r11);
+	strcat(cadena,",");
+	strcat(cadena,r12);
+	strcat(cadena,")");
+	strcat(cadena,"4 vcol-->");
+	strcat(cadena,"(");
+	strcat(cadena,r13);
+	strcat(cadena,",");
+	strcat(cadena,r14);
+	strcat(cadena,",");
+	strcat(cadena,r15);
+	strcat(cadena,",");
+	strcat(cadena,r16);
+	strcat(cadena,")");
+	AfxMessageBox(cadena);
 }

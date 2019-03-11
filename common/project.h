@@ -7,14 +7,27 @@
 #include "opengl.h"
 #include "texfont.h"
 #include "array.h"
+/********FRAN*********/
+#include "lista.h"
+#include <time.h>
+//#include "listaPieza.h"
 
-typedef enum 
+#include "listaConector.h"
+#include "Algebra3.h"
+#include <fstream.h>
+/*********************/
+
+typedef enum
 {
   LC_TRACK_NONE, LC_TRACK_START_LEFT, LC_TRACK_LEFT,
   LC_TRACK_START_RIGHT, LC_TRACK_RIGHT
 } LC_MOUSE_TRACK;
 
+class Administrador;
 class Piece;
+/********FRAN*********/
+class Conector;
+/*********************/
 class Camera;
 class Light;
 class Group;
@@ -37,13 +50,170 @@ typedef struct LC_UNDOINFO
   LC_UNDOINFO() { pNext = NULL; };
 } LC_UNDOINFO;
 
+
 class Project
 {
+
+/********FRAN*********/
+
+private:
+
+
+	Conector *selectCon1; /**< Primer conector seleccionado por el usuario */
+	Conector *selectCon2; /**< Segundo conector seleccionado por el usuario */
+	Conector *delAssembling1; /**< Conector seleccionat a desensamblar. */
+	Conector *Motor;
+
+	Administrador *adminis;
+
+	Piece *piezaDeslizar; /**< Pieza a la que vamos a deslizar. */
+	Conector *deslizarConector; /**< Conector a deslizar. */
+
+	int nSelect; /**< Número de conectores seleccionados. */
+	bool ensamblar; /**< Nos informa de si el usuario tiene activada la opción de assembling. */
+	bool desconectar,desconectarPieza,deslizar;
+	Lista<Piece*> piezas;
+
+	/**
+	 * Función que calcula el ángulo dado el módulo del producto vectorial y el producto escalar.
+	 * opp es el módulo del producto vectorial.
+	 * adj es el producto escalar.
+	 */
+	double angulo(double opp,double adj);
+
+	/**
+	 * Elimina los posibles asemblings entre piezas.
+	 * Es utilizada cuando el usuario desabilita la opción del assembling.
+	 * Se eliminan las conexiones para que después no queden inconsistencias.
+	 */
+	void resetearAssembling(void);
+
+	void borrarAssemblings(void);
+
+	/**
+	 * Interfície con el usuario.
+	 * Interfície para seleccionar los conectores a ensamblar.
+	 * @param pCon conector seleccionado.
+	 */
+	void seleccionarConectores(Conector *pCon);
+
+	/**
+	 * Interfície con el usuario.
+	 * interfície para confirmar el assembling entre dos conectores.
+	 * @param pPieza pieza seleccionada.
+	 */
+	void confirmarConectores(Piece *pPieza);
+
+	/**
+	 * Crea la pieza seleccionada por el usuario leyendo el fichero LCI correspondiente.
+	 * @param pPiece puntero a la pieza que hay que leer su fichero LCI y crear toda la información necesaria.
+	 */
+	void crearPieza(Piece *pPiece);
+	void piezasNoVisitadas(void); /**< Pone como no visitadas a todas las piezas del proyecto actual. */
+
+	/**
+	 * Propaga el assembling entre "pieza" y el resto de piezas de la escena.
+	 * Mira si algún conector de "pieza" puede ensamblar con algún otro de otra pieza de la misma escena.
+	 * @param pieza piza a la que se propaga el assembling;
+	 */
+	void propagarAssembling(Piece *pieza);
+
+	/**
+	 * Método que propaga (busca conexiones secundarias) entre todas las piezas.
+	 * Mira si algún conector de alguna pieza puede ensamblar con algún otro de alguna pieza de la misma escena.
+	 */
+	void propagarAssemblingTotal(void);
+
+	/**
+	 * Busca conexiones secundarias entre la parte dinámica de la escena y la parte estática.
+	 * @param piezaDinamica pieza a la que se le ha aplicado un proceso de assembling.
+	*/
+	void propagarAssemblingParteDinamica(Piece *piezaDinamica);
+
+	/**
+	 * Realiza el assembling entre los conectores seleccionados por el usuario.
+	 * @param estatico el conector de la pieza que no se translada/rota.
+	 * @param dinamico el conector de la pieza que hay que transladar/rotar.
+	 */
+	void assembling(Conector *estatico,Conector *dinamico);
+
+	/**
+	 * Llena la estructura de datos "datos", con la información de todos los conectores libres
+	 * de las piezas seleccionadas por el usuario.
+	 * @param datos puntero a la estructura de datos donde se almacena la información de los conectores libres de todas las piezas seleccionadas.
+	 */
+	//void crearDatosConectores(LC_FRAN_SEL_DATA *datos);
+
+	/**
+	 * Obtiene el conector seleccionado por el usuario.
+	 * @param datos puntero a la estructura de datos donde se almacena la información de los conectores libres de todas las piezas seleccionadas.
+	 */
+	//Conector *conectorSeleccionado(LC_FRAN_SEL_DATA *datos);
+
+	void vaciarLista(void); /**< Vacía la lista "listaPiezas". */
+
+	/**
+	 * Introduce la pieza pPieza en la lista de piezas listaPiezas si no existe en tal pieza.
+	 * Actualiza nConLibres con el número de conectores libres de la pieza, si ésta se inserta.
+	 * @param pPieza puntero a la pieza.
+	 * @nConLibres puntero al número de conectores libres total de todas las piezas de la lista.
+	 */
+	int introducirPiezaLista(Piece *pPieza);
+
+
+	//void introducirPiezaLista(Piece *pPieza,int *nConLibres);
+
+
+	/**
+	 * Busca dentro de todas las piezas de la escena el conector ocupado con el ID indicado
+	 * @param id identificador del conector
+	 */
+	Conector *buscarConectorOcupado(int id);
+
+	/**
+	 * Busca dentro de todas las piezas de la escena el conector libre con el ID indicado
+	 * @param id identificador del conector
+	 */
+	Conector *buscarConectorLibre(int id);
+
+	/**
+	 * Nos devuelve el número de conectores ocupados.
+	 * Cada pareja de ocupados cuenta una vez, sin repetidos.
+	 */
+	int numeroAssemblings(void);
+
+	/**
+	 * Restable las conexiones tal y como lee desde el fichero.
+	 * Para después del Undo/Redo reestablecer las conexiones tal y como estaban.
+	 * @param file fichero desde donde se leen los pares de IDs para volver a ensamblar los conectores.
+	 * @param nAssemblings número de pares de IDs==número de assemblings entre conectores, sin repetidos.
+	 */
+	void restablecerAssemblings(File *file,int nAssemblings);
+
+	/**
+	 * Método que devuelve la lista de piezas no conectadas a una pieza dada.
+	 * @param conectadas lista de piezas conectadas a una determinada pieza.
+	 */
+	Lista<Piece*> listaPiezasNoConectadas(Lista<Piece*> conectadas);
+
+	/**
+	 * Método que se encaraga de detectar colisiones en el proceso de deslizado.
+	 * @param translacion es el vector traslacion que quiere deslizar el usuario.
+	 */
+	void deteccionColisionesDeslizar(float *translacion);
+
+	/********FRAN*********/
+	/****************XUS********************/
+	Conector *buscarMotor();
+
 public:
 // Constructors
 	Project();
 	~Project();
 	bool Initialize(int argc, char *argv[], char* binpath, char* libpath);
+	/****************XUS********************/
+	void EjecutarMotor();
+
 
 // Attributes
 public:
@@ -121,6 +291,9 @@ protected:
 	bool LoadPieceLibrary (char* libpath);
 	char m_LibraryPath[LC_MAXPATH];	// path to the library files
 	char m_AppPath[LC_MAXPATH];	// path to the LeoCAD executable
+	/********FRAN*********/
+	char directorioLCI[LC_MAXPATH]; /**< String con el path al directorio LCI. Por defecto es el del ejecutable. */
+	/********FRAN*********/
 	int m_nPieceCount;		// number of pieces
 	PieceInfo* m_pPieceIdx;	// index
 	int m_nTextureCount;
@@ -202,6 +375,17 @@ public:
 	void SetAction(int nAction);
 	void HandleNotify(LC_NOTIFY id, unsigned long param);
 	void HandleCommand(LC_COMMANDS id, unsigned long nParam);
+
+	/********FRAN*********/
+	/**
+	 * Modifica el estado de las variables desconectar,desconectarPieza y deslizar según la accion.
+	 * @param accion nos indica si modificamos el estado de desconectar,desconectarPieza o deslizar.
+	 */
+	void canviarEstado(int accion);
+
+	void conectoresNoVisitados(void);
+	void transformar(unsigned short nTime,bool bAnimation,bool bAddKey);
+	/********FRAN*********/
 
 protected:
 	// State variables

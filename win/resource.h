@@ -132,6 +132,12 @@
 #define IDD_TERRAIN_OPTIONS             218
 #define IDR_PREVIEW                     221
 #define IDD_EDIT_GROUPS                 231
+#define IDD_FRAN_SELECT_CONECTOR        232
+#define IDC_FRAN_DISABLE_ASSEMBLING     238
+#define IDR_ASSEMBLING                  240
+#define IDC_FRAN_DISABLE_ALL            249
+#define IDD_FRAN_LCI_DIRECTORY          252
+#define IDC_FRAN_SLIDE                  256
 #define IDC_SELDLG_LIST                 1000
 #define IDC_SELDLG_ALL                  1001
 #define IDC_SELDLG_NONE                 1002
@@ -403,18 +409,26 @@
 #define IDC_MF_TOOLRANGLE               1228
 #define IDC_MF_LEGLANGLE                1229
 #define IDC_MF_LEGRANGLE                1230
+#define IDC_FRAN_CONECTOR_LIST          1230
 #define IDC_MF_SHOELANGLE               1231
 #define IDC_MF_SHOERANGLE               1232
 #define IDC_MF_HATSPIN                  1233
+#define IDC_FRAN_LAYOUT                 1233
 #define IDC_MF_HEADSPIN                 1234
 #define IDC_MF_NECKSPIN                 1235
 #define IDC_MF_ARMLSPIN                 1236
+#define IDC_FRAN_GROUP_BOX1             1236
 #define IDC_MF_ARMRSPIN                 1237
+#define IDC_FRAN_GROUP_BOX2             1237
 #define IDC_MF_HANDLSPIN                1238
+#define IDC_FRAN_LINEA                  1238
 #define IDC_MF_HANDRSPIN                1239
 #define IDC_MF_TOOLLSPIN                1240
+#define IDC_FRAN_LCIDLG_LCIBROWSE       1240
 #define IDC_MF_TOOLRSPIN                1241
+#define IDC_FRAN_TEXT_LCI_PATH          1241
 #define IDC_MF_LEGLSPIN                 1242
+#define IDC_FRAN_EDIT_LCI_PATH          1242
 #define IDC_MF_LEGRSPIN                 1243
 #define IDC_MF_SHOELSPIN                1244
 #define IDC_MF_SHOERSPIN                1245
@@ -638,6 +652,25 @@
 #define ID_FILE_IMPORTPIECE             33152
 #define ID_VIEW_NEWVIEW                 33153
 #define ID_VIEW_STEP_DELETE             33154
+#define ID_ASSEMBLING                   33156
+#define ID_ENABLE_ASSEMBLING            33157
+#define ID_FRAN_NUMERAR_CONECTORS       33159
+#define ID_DISPLACE                     33161
+#define ID_DISABLE_ASSEMBLING           33162
+#define ID_FRAN_DISCONECT_ASSEMBLING    33164
+#define ID_FRAN_DISPLACE                33165
+#define ID_FRAN_ENABLE_ASSEMBLING       33166
+#define ID_FRAN_SELECT_CONECTORBUTTON33167 33167
+#define ID_FRAN_SELECT_CONECTOR         33168
+#define ID_FRAN_DISCONECT_ALL           33169
+#define ID_VIEW_ASSEMBLING_BAR          33176
+#define ID_FRAN_ASSEMBLING_CONECTORS    33200
+#define ID_FRAN_SLIDE                   33202
+#define ID_FRAN_SELECT_LCI_DIRECTORY    33203
+#define ID_ID_FRAN_DISCONECT_ASSEMBLING 33206
+#define ID_XUS_PLAY_MOTOR               33211
+#define ID_BUTTON33212                  33212
+#define ID_XUS_PRUEVA                   33212
 #define ID_VIEW_PIECES_BAR              59425
 #define ID_VIEW_TOOLS_BAR               59426
 #define ID_VIEW_ANIMATION_BAR           59427
@@ -648,9 +681,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        234
-#define _APS_NEXT_COMMAND_VALUE         33155
-#define _APS_NEXT_CONTROL_VALUE         1224
-#define _APS_NEXT_SYMED_VALUE           121
+#define _APS_NEXT_RESOURCE_VALUE        272
+#define _APS_NEXT_COMMAND_VALUE         33213
+#define _APS_NEXT_CONTROL_VALUE         1243
+#define _APS_NEXT_SYMED_VALUE           122
 #endif
 #endif

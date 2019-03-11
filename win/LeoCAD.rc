@@ -605,21 +605,25 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 217, 122
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 217, 175
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About LeoCAD"
 FONT 8, "MS Sans Serif"
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,21,20
     LTEXT           "LeoCAD Version 0.73",IDC_STATIC,40,10,119,8,SS_NOPREFIX
     LTEXT           "Copyright © 1996-2002, BT Software",IDC_STATIC,40,25,
                     119,8
     DEFPUSHBUTTON   "OK",IDOK,178,7,32,14,WS_GROUP
-    GROUPBOX        "System Information",IDC_STATIC,7,65,203,50
-    EDITTEXT        IDC_ABTDLG_INFO,14,79,190,30,ES_MULTILINE | 
+    GROUPBOX        "System Information",IDC_STATIC,7,119,203,50
+    EDITTEXT        IDC_ABTDLG_INFO,13,133,190,30,ES_MULTILINE | 
                     ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "This program is protected by copyright law and international treaties.",
                     IDC_STATIC,40,40,151,19
+    GROUPBOX        "LeoCAM Information",IDC_FRAN_LINEA,40,63,127,49
+    LTEXT           "- LeoCAM Version 0.1",IDC_STATIC,53,76,87,9
+    LTEXT           "- Based on LeoCAD Version 0.73",IDC_STATIC,53,87,112,10
+    LTEXT           "- 2003",IDC_STATIC,53,98,34,10
 END
 
 IDD_PROPGENERAL DIALOG DISCARDABLE  0, 0, 220, 105
@@ -1255,7 +1259,7 @@ EXSTYLE WS_EX_CONTEXTHELP
 CAPTION "POV-Ray Export "
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    EDITTEXT        IDC_POVDLG_OUTPOV,13,75,97,10,ES_AUTOHSCROLL,0,
+    EDITTEXT        IDC_POVDLG_OUTPOV,13,75,97,12,ES_AUTOHSCROLL,0,
                     HIDC_POVDLG_OUTPOV
     PUSHBUTTON      "...",IDC_POVDLG_POVOUTBROWSE,115,75,8,10
     CONTROL         "Render Scene",IDC_POVDLG_RENDER,"Button",
@@ -1264,11 +1268,11 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,138,13,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,138,30,50,14
     LTEXT           "LGEO Path",IDC_STATIC,13,9,66,8
-    EDITTEXT        IDC_POVDLG_LGEO,13,19,97,10,ES_AUTOHSCROLL,0,
+    EDITTEXT        IDC_POVDLG_LGEO,13,19,97,12,ES_AUTOHSCROLL,0,
                     HIDC_POVDLG_LGEO
     PUSHBUTTON      "...",IDC_POVDLG_LGEOBROWSE,115,19,8,10
     LTEXT           "POV-Ray Executable",IDC_STATIC,13,37,66,8
-    EDITTEXT        IDC_POVDLG_POVRAY,13,47,97,10,ES_AUTOHSCROLL,0,
+    EDITTEXT        IDC_POVDLG_POVRAY,13,47,97,12,ES_AUTOHSCROLL,0,
                     HIDC_POVDLG_POVRAY
     PUSHBUTTON      "...",IDC_POVDLG_POVBROWSE,115,47,8,10
     LTEXT           "Output File",IDC_STATIC,13,65,66,8
@@ -1381,6 +1385,20 @@ BEGIN
                     WS_BORDER | WS_TABSTOP,7,7,179,122
 END
 
+IDD_FRAN_SELECT_CONECTOR DIALOG DISCARDABLE  0, 0, 201, 109
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select Conector"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "",IDC_FRAN_LAYOUT,126,4,8,8
+    LISTBOX         IDC_FRAN_CONECTOR_LIST,20,23,82,65,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Select Conector",IDC_FRAN_GROUP_BOX1,7,7,187,93
+    PUSHBUTTON      "Select",IDOK,127,38,40,14
+    PUSHBUTTON      "Cancel",IDCANCEL,127,61,40,14
+    GROUPBOX        "Options",IDC_FRAN_GROUP_BOX2,111,19,71,69
+END
+
 
 #ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
@@ -1406,10 +1424,10 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "Comments", "\0"
-            VALUE "CompanyName", "BT Software\0"
+            VALUE "CompanyName", "BT Software + Fran + Xus\0"
             VALUE "FileDescription", "LeoCAD\0"
             VALUE "FileVersion", "1, 0, 0, 1\0"
-            VALUE "InternalName", "LeoCAD\0"
+            VALUE "InternalName", "LeoCAM\0"
             VALUE "LegalCopyright", "Copyright © 1996-2002, BT Software\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "LEOCAD.EXE\0"
@@ -1441,7 +1459,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 210
         TOPMARGIN, 7
-        BOTTOMMARGIN, 115
+        BOTTOMMARGIN, 168
     END
 
     IDD_PROPGENERAL, DIALOG
@@ -1627,6 +1645,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 150
     END
+
+    IDD_FRAN_SELECT_CONECTOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 194
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 104
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1661,6 +1687,7 @@ IDC_PAN_NE              CURSOR  DISCARDABLE     "res\\pan_ne.cur"
 IDC_PAN_NW              CURSOR  DISCARDABLE     "res\\pan_nw.cur"
 IDC_PAN_SE              CURSOR  DISCARDABLE     "res\\pan_se.cur"
 IDC_PAN_SW              CURSOR  DISCARDABLE     "res\\pan_sw.cur"
+IDC_FRAN_DISABLE_ASSEMBLING CURSOR  DISCARDABLE     "res\\disable_.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2026,9 +2053,185 @@ STRINGTABLE DISCARDABLE
 BEGIN
     ID_FILE_IMPORTPIECE     "Import a piece from LDraw"
     ID_VIEW_NEWVIEW         "Creates a new view window"
+    ID_ASSEMBLING           "Disable an assembling between two pieces\nDisable assembling"
+    ID_ENABLE_ASSEMBLING    "Enable assembling between pieces\nAssembling"
+    ID_FRAN_NUMERAR_CONECTORS "Numerar conectors' piece\nNumerar"
+    ID_DISPLACE             "Enable displacement Axle or AxleHole connectors\nDisplace Axle/AxleHole"
+    ID_DISABLE_ASSEMBLING   "Disable assembling between two pieces\nAssembling"
+    ID_FRAN_DISCONECT_ASSEMBLING 
+                            "Disconect two assembled conectors\nDisconect conectors"
+    ID_FRAN_DISPLACE        "Desplace over Axle conector\nDesplace over Axle"
+    ID_FRAN_ENABLE_ASSEMBLING 
+                            "Enable assembling between pieces\nEnable Assembling"
+    ID_FRAN_SELECT_CONECTORBUTTON33167 
+                            "Select a piece's connector\nSelect connector "
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_DISCONECT_ALL   "Disconnect two pieces\nDisconnect All"
+    ID_VIEW_ASSEMBLING_BAR  "Show or hide the assembling toolbar\nToggle AssemblingBar"
 END
 
 #endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Spanish (Mexican) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESM)
+#ifdef _WIN32
+LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MEXICAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_FRAN_LCI_DIRECTORY DIALOG DISCARDABLE  0, 0, 185, 47
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "LCI folder"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,128,9,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,128,26,50,14
+    EDITTEXT        IDC_FRAN_EDIT_LCI_PATH,7,19,95,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_FRAN_LCIDLG_LCIBROWSE,107,21,8,10
+    LTEXT           "LCI path",IDC_FRAN_TEXT_LCI_PATH,8,8,77,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_FRAN_LCI_DIRECTORY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 178
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 40
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_FRAN_DISABLE_ALL    CURSOR  DISCARDABLE     "res\\fran_dis.cur"
+IDC_FRAN_SLIDE          CURSOR  DISCARDABLE     "res\\fran_sli.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_NUMERAR_CONECTORS "Number connectors' piece\nNumber connectors"
+    ID_FRAN_DISCONECT_ASSEMBLING 
+                            "Disconect two assembled connectors\nDisconect connectors"
+    ID_FRAN_DISPLACE        "Slide a Axle, AxleHole or CylindircalHole  connector\nSlide"
+    ID_FRAN_ENABLE_ASSEMBLING 
+                            "Enable assembling between pieces\nEnable Assembling"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_SELECT_CONECTOR "Select a connector's piece\nSelect connector"
+    ID_FRAN_DISCONECT_ALL   "Disconnect two pieces\nDisconnect All"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_ASSEMBLING_CONECTORS 
+                            "Make assembling between two connectors\nAssembling "
+    ID_FRAN_SLIDE           "Slide Axle, AxleHole or CylindricalHole connectors\nSlide"
+    ID_FRAN_SELECT_LCI_DIRECTORY "Select LCI folder\nLCI folder"
+END
+
+#endif    // Spanish (Mexican) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Spanish (Modern) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
+#ifdef _WIN32
+LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_ASSEMBLING          BITMAP  DISCARDABLE     "res\\assembli.bmp"
+IDB_SPLASH              BITMAP  DISCARDABLE     "Splsh16.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_ASSEMBLING TOOLBAR DISCARDABLE  16, 15
+BEGIN
+    BUTTON      ID_XUS_PLAY_MOTOR
+    SEPARATOR
+    BUTTON      ID_FRAN_ASSEMBLING_CONECTORS
+    BUTTON      ID_FRAN_DISCONECT_ASSEMBLING
+    BUTTON      ID_FRAN_DISCONECT_ALL
+    SEPARATOR
+    BUTTON      ID_FRAN_SLIDE
+    SEPARATOR
+    BUTTON      ID_FRAN_SELECT_LCI_DIRECTORY
+    SEPARATOR
+    BUTTON      ID_XUS_PLAY_MOTOR
+    BUTTON      ID_XUS_PRUEVA
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_ENABLE_ASSEMBLING 
+                            "Enable/Disable assembling between pieces\nEnable/Disable Assembling"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_ASSEMBLING_CONECTORS 
+                            "Make assembling between two connectors\nAssembling"
+    ID_FRAN_SLIDE           "Slide Axle, Axle Hole or Cylindrical Hole connectors\nSlide"
+    ID_FRAN_SELECT_LCI_DIRECTORY "Select LCI folder\nLCI folder"
+    ID_ID_FRAN_DISCONECT_ASSEMBLING 
+                            "Disconnect two assembled connectors\nDisconnect connectors"
+    ID_XUS_PLAY_MOTOR       "Play motor to gears\nPlay/pause Motor to gears"
+    ID_XUS_PRUEVA           "inicializacion prueva"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FRAN_DISCONECT_ALL   "Disconnect two pieces\nDisconnect All"
+END
+
+#endif    // Spanish (Modern) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

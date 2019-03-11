@@ -19,6 +19,13 @@
 #include "imagedlg.h"
 #include "groupdlg.h"
 #include "figdlg.h"
+/*********FRAN*******/
+#include "selConDlg.h"
+#include "project.h"
+#include "globals.h"
+
+#include "lciDlg.h"
+/*********FRAN*******/
 #include "seldlg.h"
 #include "htmldlg.h"
 #include "stepdlg.h"
@@ -437,6 +444,40 @@ void SystemUpdateAction(int nNew, int nOld)
 	pCtrl->CheckButton(ID_ACTION_SELECT+nOld, FALSE);
 	pCtrl->CheckButton(ID_ACTION_SELECT+nNew, TRUE);
 
+	/******************FRAN******************/
+	CToolBar* pBar1 = (CToolBar*)pFrame->GetControlBar(ID_VIEW_ASSEMBLING_BAR);
+	CToolBarCtrl* pCtrl1 = &pBar1->GetToolBarCtrl();
+
+	if(nOld==LC_ACTION_FRAN_DISABLE_ASSEMBLING && nNew!=LC_ACTION_FRAN_DISABLE_ASSEMBLING)
+	{
+		if(pCtrl1->IsButtonChecked(ID_FRAN_DISCONECT_ASSEMBLING))
+		{
+			pCtrl1->CheckButton(ID_FRAN_DISCONECT_ASSEMBLING,false);
+			project->canviarEstado(LC_FRAN_DISABLE_ASSEMBLING);
+		}
+	}
+
+	if(nOld==LC_ACTION_FRAN_DISABLE_ALL && nNew!=LC_ACTION_FRAN_DISABLE_ALL)
+	{
+		if(pCtrl1->IsButtonChecked(ID_FRAN_DISCONECT_ALL))
+		{
+			pCtrl1->CheckButton(ID_FRAN_DISCONECT_ALL,false);
+			project->canviarEstado(LC_FRAN_DISABLE_ALL);
+		}
+	}
+
+	if(nOld==LC_ACTION_FRAN_SLIDE && nNew!=LC_ACTION_FRAN_SLIDE)
+	{
+		if(pCtrl1->IsButtonChecked(ID_FRAN_SLIDE))
+		{
+			pCtrl1->CheckButton(ID_FRAN_SLIDE,false);
+			project->canviarEstado(LC_FRAN_SLIDE);
+		}
+	}
+
+
+	/******************FRAN******************/
+
 	// TODO: make sure this works if loading a file from the cmd line.
 	if (pView)
 		pView->SendMessage(WM_LC_SET_CURSOR, nNew);
@@ -450,6 +491,67 @@ void SystemUpdateColorList(int nNew)
 {
 	AfxGetMainWnd()->PostMessage (WM_LC_UPDATE_LIST, 0, nNew+1);
 }
+
+/**********************************FRAN*************************************/
+
+bool SystemFranButtonChecked(int idButton)
+{
+	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
+	CToolBar* pBar = (CToolBar*)pFrame->GetControlBar(ID_VIEW_ASSEMBLING_BAR);
+	CToolBarCtrl* pCtrl = &pBar->GetToolBarCtrl();
+
+	return pCtrl->IsButtonChecked(idButton);
+}
+
+void SystemCheckButton(int idButton,bool check)
+{
+	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
+	CToolBar* pBar = (CToolBar*)pFrame->GetControlBar(ID_VIEW_ASSEMBLING_BAR);
+	CToolBarCtrl* pCtrl = &pBar->GetToolBarCtrl();
+
+	pCtrl->CheckButton(idButton,check);
+}
+
+void SystemUpdateEnableAssembling(bool enable)
+{
+
+	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
+	CToolBar* pBar = (CToolBar*)pFrame->GetControlBar(ID_VIEW_ASSEMBLING_BAR);//CToolBar* pBar = (CToolBar*)pFrame->GetControlBar(ID_VIEW_TOOLS_BAR);
+	CToolBarCtrl* pCtrl = &pBar->GetToolBarCtrl();
+
+
+	if(enable)
+	{
+		//Si en la aplicación se realiza assembling, entonces avilitamos todos los botones
+		//que sirven para tales efectos.
+		pCtrl->EnableButton(ID_FRAN_NUMERAR_CONECTORS,TRUE);
+		pCtrl->EnableButton(ID_FRAN_SELECT_CONECTOR,TRUE);
+		pCtrl->EnableButton(ID_FRAN_ASSEMBLING_CONECTORS,TRUE);
+		pCtrl->EnableButton(ID_FRAN_DISCONECT_ASSEMBLING,TRUE);
+		pCtrl->EnableButton(ID_FRAN_DISCONECT_ALL,TRUE);
+		pCtrl->EnableButton(ID_FRAN_SLIDE,TRUE);
+		pCtrl->EnableButton(ID_FRAN_SELECT_LCI_DIRECTORY,TRUE);
+	}
+	else
+	{
+		//Sino, desavilitamos los botones.
+		pCtrl->EnableButton(ID_FRAN_NUMERAR_CONECTORS,FALSE);
+		pCtrl->EnableButton(ID_FRAN_SELECT_CONECTOR,FALSE);
+		pCtrl->EnableButton(ID_FRAN_ASSEMBLING_CONECTORS,FALSE);
+		pCtrl->EnableButton(ID_FRAN_DISCONECT_ASSEMBLING,FALSE);
+		pCtrl->EnableButton(ID_FRAN_DISCONECT_ALL,FALSE);
+		pCtrl->EnableButton(ID_FRAN_SLIDE,FALSE);
+		pCtrl->EnableButton(ID_FRAN_SELECT_LCI_DIRECTORY,FALSE);
+	}
+
+	//Activamos o desactivamos el botón del assembling.
+	pCtrl->CheckButton(ID_FRAN_ENABLE_ASSEMBLING,enable);
+
+}
+
+/**********************************FRAN*************************************/
+
+
 
 void SystemUpdateRenderingMode(bool bBackground, bool bFast)
 {
@@ -1348,6 +1450,30 @@ bool SystemDoDialog(int nMode, void* param)
 			if (dlg.DoModal() == IDOK)
 				return true;
 		} break;
+
+		/*****************FRAN*****************/
+		//No se si lo mío va aquí porque proviene de un botón y no de un menú
+		//Pero son igualmente diálogos...no??????
+		case LC_DLG_FRAN_SELECT_CONECTOR:
+			{
+				SelConDlg dialogo(param);
+				if(dialogo.DoModal()==IDOK) return true;
+			}break;
+
+		case LC_DLG_FRAN_SELECT_LCI_DIRECTORY:
+			{
+				LCIDlg dialogo;
+
+				if(dialogo.DoModal()==IDOK)
+				{
+					char *opts=(char*) param;
+
+					strcpy(opts,dialogo.m_strLCI);
+					return true;
+				}
+
+			} break;
+		/*****************FRAN*****************/
 
 		case LC_DLG_STEPCHOOSE:
 		{

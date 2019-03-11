@@ -75,6 +75,11 @@ void SystemUpdateMoveSnap(unsigned short nMoveSnap);
 void SystemUpdateSelected(unsigned long flags);
 void SystemUpdatePaste(bool enable);
 void SystemUpdatePlay(bool play, bool stop);
+/*****************FRAN*****************/
+bool SystemFranButtonChecked(int idButton);
+void SystemCheckButton(int idButton,bool check);
+void SystemUpdateEnableAssembling(bool enable);
+/*****************FRAN*****************/
 
 void SystemInit();
 void SystemFinish();

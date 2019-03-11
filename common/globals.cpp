@@ -5,9 +5,37 @@
 #include <stdlib.h>
 #include "globals.h"
 
+/********FRAN********/
+#include "piece.h"
+#include "conector.h"
+/********FRAN********/
+
 Project* project;
 Messenger* messenger;
 MainWnd* main_window;
+/********XUS*********/
+Piece *pieza_asembling;
+
+Listagestor *ges;
+
+PieceInfo *infospur;
+PieceInfo *infoaxle;
+int vale;
+double wormthooth;
+
+bool antesrack;
+
+bool puedo;
+bool opbevel;
+COLOCAR posi;
+bool tengoMotor;
+bool RotacionManual;
+/********FRAN********/
+int idConector;
+int idPieza;
+bool recalcularConexiones;
+bool obligatorio;
+/********FRAN********/
 
 const char* colornames[LC_MAXCOLORS] = { "Red", "Orange", "Green",
 	"Light Green", "Blue", "Light Blue", "Yellow", "White",

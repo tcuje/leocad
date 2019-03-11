@@ -822,6 +822,11 @@ LONG CCADView::OnChangeCursor(UINT lParam, LONG /*wParam*/)
 		case LC_ACTION_PAN: c = IDC_PAN; break;
 		case LC_ACTION_ROTATE_VIEW: c = IDC_ANGLE; break;
 		case LC_ACTION_ROLL: c = IDC_ROLL; break;
+		/***************FRAN**************/
+		case LC_ACTION_FRAN_SLIDE: c = IDC_FRAN_SLIDE; break;
+		case LC_ACTION_FRAN_DISABLE_ALL: c = IDC_FRAN_DISABLE_ALL; break;
+		case LC_ACTION_FRAN_DISABLE_ASSEMBLING: c = IDC_FRAN_DISABLE_ASSEMBLING; break;
+		/***************FRAN**************/
 		default:
 			c = NULL;
 	}

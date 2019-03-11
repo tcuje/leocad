@@ -83,7 +83,22 @@ typedef enum {
 	LC_TOOLBAR_LOCKMENU,
 	LC_TOOLBAR_SNAPMOVEMENU,
 	LC_TOOLBAR_FASTRENDER,
-	LC_TOOLBAR_BACKGROUND
+	LC_TOOLBAR_BACKGROUND,
+	/************FRAN***********/
+	LC_FRAN_ENABLE_ASSEMBLING,
+	LC_FRAN_EDIT_SELECT_CONECTOR,
+	LC_FRAN_SELECT_LCI_DIRECTORY,
+	LC_FRAN_ASSEMBLING_CONECTORS,
+
+	LC_FRAN_SLIDE,
+	LC_FRAN_DISABLE_ASSEMBLING,
+	LC_FRAN_DISABLE_ALL,
+	//LC_FRAN_DISABLE_ASSEMBLING //No debería estar aquí!!!
+	/************FRAN***********/
+	/************XUS************/
+	LC_XUS_PLAY_MOTOR,
+	LC_XUS_PRUEVA
+	/************XUS************/
 } LC_COMMANDS;
 
 typedef enum { 
@@ -101,7 +116,16 @@ typedef enum {
 	LC_ACTION_PAN,
 	LC_ACTION_ROTATE_VIEW,
 	LC_ACTION_ROLL,
-	LC_ACTION_CURVE
+	LC_ACTION_CURVE,
+	/************FRAN***********/
+	//LC_FRAN_ASSEMBLING,
+	LC_ACTION_FRAN_SLIDE,
+	LC_ACTION_FRAN_DISABLE_ASSEMBLING,
+	LC_ACTION_FRAN_DISABLE_ALL,
+	/************FRAN***********/
+	/************XUS************/
+	LC_ACTION_XUS_PLAY_MOTOR
+	/************XUS************/
 } LC_ACTIONS;
 
 // Piece connections (complicated and wastes memory but fast).
@@ -145,6 +169,17 @@ typedef struct
 	bool selected;
 	void* pointer;
 } LC_SEL_DATA;
+
+/********FRAN*******/
+
+typedef struct
+{
+	char nombre[30];
+	bool seleccionado;
+	void *puntero;
+} LC_FRAN_SEL_DATA;
+
+/********FRAN*******/
 
 typedef struct
 {
@@ -221,7 +256,11 @@ typedef enum {
 	LC_DLG_STEPCHOOSE,
 	LC_DLG_EDITGROUPS,
 	LC_DLG_GROUP,
-	LC_DLG_ABOUT
+	LC_DLG_ABOUT,
+	/************FRAN***********/
+	LC_DLG_FRAN_SELECT_CONECTOR,
+	LC_DLG_FRAN_SELECT_LCI_DIRECTORY
+	/************FRAN***********/
 } LC_DIALOGS;
 
 typedef struct
@@ -300,5 +339,14 @@ typedef struct
 	char strFooter[256];
 	char strHeader[256];
 } LC_PREFERENCESDLG_OPTS;
+
+/****************FRAN****************/
+typedef struct
+{
+	int idCon[200][2]; //Guardamos los dos IDs de los conectores
+	int numeroId;
+
+} LC_FRAN_NUMERO_CONECTORES;
+/****************FRAN****************/
 
 #endif

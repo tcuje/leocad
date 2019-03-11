@@ -12,8 +12,53 @@
 #include "piece.h"
 #include "group.h"
 #include "project.h"
+/********FRAN*********/
+#include "conector.h"
+#include "stud.h"
+#include "studInlet.h"
+#include "extreme.h"
+#include "axle.h"
+#include "axleHole.h"
+#include "cylindricalHole.h"
+/********XUS**********/
+#include "practica.tab.h"
+
+#include "Administrador.h"
+#include "sphere.h"
+#include "spur.h"
+#include "worm.h"
+#include "bevel.h"
+#include "crown.h"
+#include "rack.h"
+#include "Motor.h"
+
+#include "utilidades.h"
+/********FRAN*********/
 
 #define LC_PIECE_SAVE_VERSION 9 // LeoCAD 0.73
+/********FRAN*********/
+#define INICIO_CONECTOR "<connector>"
+#define INICIO_NOMBRE "<name>"
+#define INICIO_MATRIZ "<matrix>"
+#define INICIO_PARAMETROS "<parameters>"
+
+#define INICIO_RADIO "<radius>"
+#define INICIO_DIENTES "<tooth>"
+#define INICIO_LONGITUD "<lenght>"
+#define INICIO_ID "<id>"
+#define INICIO_HERMANO "<brother>"
+
+#define FIN_CONECTOR "</connector>"
+#define FIN_NOMBRE "</name>"
+#define FIN_MATRIZ "</matrix>"
+#define FIN_PARAMETROS "</parameters>"
+
+#define FIN_RADIO "</radius>"
+#define FIN_DIENTES "</tooth>"
+#define FIN_LONGITUD "</lenght>"
+#define FIN_ID "</id>"
+#define FIN_HERMANO "</brother>"
+/********FRAN*********/
 
 static LC_OBJECT_KEY_INFO piece_key_info[LC_PK_COUNT] =
 {
@@ -105,6 +150,37 @@ Piece::Piece(PieceInfo* pPieceInfo)
 	m_pDrawInfo = NULL;
 	m_pConnections = NULL;
 
+  m_pNext = NULL;
+  m_pPieceInfo = pPieceInfo;
+  m_nState = 0;
+  m_nColor = 0;
+  m_nStepShow = 1;
+  m_nStepHide = 255;
+  m_nFrameHide = 65535;
+  memset(m_strName, 0, sizeof(m_strName));
+  m_pGroup = NULL;
+  m_pDrawInfo = NULL;
+  m_pConnections = NULL;
+  /**************FRAN**************/
+  visitada=false; //Ponemos la pieza inicialmente como no visitada
+  //primeraMover=false;
+  transformada=false;
+  rotacionActivada=false;
+  traslacionActivada=false;
+
+  /*******PRUEVA*********/
+  visitada1=false;
+  visitada2=false;
+  /*******PRUEVA*********/
+
+  id=idPieza;
+  idPieza=idPieza+1;
+  /**************FRAN**************/
+
+  /*************XUS*****************/
+  rotor=NULL;
+  ejeZ=false;
+
 	if (m_pPieceInfo != NULL)
 	{
 		m_nBoxList = m_pPieceInfo->AddRef();
@@ -133,6 +209,7 @@ Piece::Piece(PieceInfo* pPieceInfo)
 
 Piece::~Piece()
 {
+  rotor=NULL;
   if (m_pPieceInfo != NULL)
     m_pPieceInfo->DeRef ();
 
@@ -141,6 +218,18 @@ Piece::~Piece()
 
   if (m_pConnections != NULL)
     free (m_pConnections);
+
+  /*************FRAN***************/
+  //No hay que hacer nada porque el destructor de la lista ya se encargará de hacer las cosas
+  /*La pieza a eliminar puede tener conectores conectados.entonces a esos conectores hay que
+    decirles que ya no están conectados al de la pieza a eliminar y si hace falta ponerlos como libres.*/
+  borrar();
+  //Como el destructor de la lista hace un delete de los elementos de esta dejamos las listas de conectores libres!!!
+  //Solo la lista de conectores libres, ya que el borrar borrar todas las conexiones y pone a todos los
+  //conectores como libres-->Para reutilizar el código borrar en el eliminar todo el assembling
+  //borrarConectoresLibres();-->CREO QUE NO HACE FALTA!!!
+  /********************************/
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -377,6 +466,23 @@ void Piece::Initialize(float x, float y, float z, unsigned char nStep, unsigned 
   ChangeKey (1, false, true, rot, LC_PK_ROTATION);
   ChangeKey (1, true, true, pos, LC_PK_POSITION);
   ChangeKey (1, true, true, rot, LC_PK_ROTATION);
+
+  UpdatePosition (1, false);
+
+  m_nColor = nColor;
+}
+
+void Piece::Initialize(float x, float y, float z, float r[4],unsigned char nStep, unsigned short nFrame, unsigned char nColor)
+{
+  m_nFrameShow = nFrame;
+  m_nStepShow = nStep;
+
+  float pos[3] = { x, y, z }, rot[4]={0,0,1,0};
+
+  ChangeKey (1, false, true, pos, LC_PK_POSITION);
+  ChangeKey (1, false, true, r, LC_PK_ROTATION);
+  ChangeKey (1, true, true, pos, LC_PK_POSITION);
+  ChangeKey (1, true, true, r, LC_PK_ROTATION);
 
   UpdatePosition (1, false);
 
@@ -1151,6 +1257,25 @@ void Piece::Render(bool bLighting, bool bNoAlpha, bool bEdges, unsigned char* nL
 		}
 	}
 
+	/*********************FRAN********************
+	glBegin(GL_LINES);
+
+	glColor3f(0,1,0);
+	glVertex3f(0,0,0);
+	glVertex3f(1,0,0);
+
+	glColor3f(0,0,1);
+	glVertex3f(0,0,0);
+	glVertex3f(0,1,0);
+
+	glColor3f(1,0,0);
+	glVertex3f(0,0,0);
+	glVertex3f(0,0,1);
+
+	glEnd();
+
+	/*********************FRAN********************/
+
 	glPopMatrix();
 }
 
@@ -1669,3 +1794,1225 @@ BOOL CPiece::CollideAt(CPiece* pPiece, float rot[4], float pos[3])
 		rotation2, translation2, pPiece->m_pInfo->m_pRModel);
 }
 */
+
+
+/***************************FRAN****************************/
+
+int Piece::introducirConectorLibre(Conector *c)
+{
+	//Introducir un nuevo conector libre en la lista de conectores libres
+	if(conLibres.Introducir(c)>0) return 1;
+	else return -1; //Quiere decir que no queda memeoria para introducir nuevos elementos en la lista de conectores libres
+}
+
+/***********************************************************/
+
+void Piece::esborrarConectorLibre(void)
+{
+	//Eliminar el conector libre actual
+	conLibres.Esborrar();
+}
+
+/***********************************************************/
+
+bool Piece::esborrarConectorLibre(int id)
+{
+
+	//return conLibres.Esborrar(pCon);
+	Conector *pCon;
+	bool trobat=false;
+
+	//VIGILAR QUE NO AFECTE A LA LISTA DE CONECTORES LIBRES!!!!!!!
+
+	conLibres.Primero();
+	while(!conLibres.Fin() && !trobat)
+	{
+		pCon=conLibres.Actual();
+		if(id==pCon->obtenerId())
+		{
+			trobat=true;
+			conLibres.Esborrar(); //Borramos el actual
+		}
+		else conLibres.Siguiente();
+	}
+
+	return trobat;
+}
+
+/***********************************************************/
+
+Conector * Piece::obtenerActualLibre(void)
+{
+	//Obtiene el conector actual libre
+	return conLibres.Actual();
+}
+
+/***********************************************************/
+
+void Piece::primeroLibre(void)
+{
+	//Se sitúa en el primer conector libre
+	conLibres.Primero();
+}
+
+/***********************************************************/
+
+void Piece::siguienteLibre(void)
+{
+	//Se sitúa en el siguiente conector libre
+	conLibres.Siguiente();
+}
+
+/***********************************************************/
+
+void Piece::ultimoLibre(void)
+{
+	//Nos sitúa en el último conector de la lista de conectores libres
+	conLibres.Ultimo();
+}
+
+/***********************************************************/
+
+void Piece::anteriorLibre(void)
+{
+	//Nos sitúa sobre el conector anterior al actual en la lista de conectores libres
+	conLibres.Anterior();
+
+}
+
+/***********************************************************/
+
+bool Piece::finLibre(void)
+{
+	//Cierto si hemos llegado al final de la lista de conectores libres
+	return conLibres.Fin();
+}
+
+/***********************************************************/
+
+bool Piece::vaciaLibre(void)
+{
+	//Cierto si la lista de conectores libres está vacía
+	return conLibres.Vacia();
+}
+
+/***********************************************************/
+
+bool Piece::llenaLibre(void)
+{
+	//Siempre es falso,ya que la lista está implementada dinámicamente
+	return conLibres.Llena();
+}
+
+/***********************************************************/
+
+int Piece::nElementosLibre(void)
+{
+	//Devuelve le número de conectores que hay en la lista de conectores libres
+	return conLibres.NElementos();
+}
+
+/***********************************************************/
+
+int Piece::introducirConectorOcupado(Conector *c)
+{
+	//Introducir un nuevo conector libre en la lista de conectores ocupados
+	if(conOcupados.Introducir(c)>0) return 1;
+	else return -1; //Quiere decir que no queda memeoria para introducir nuevos elementos en la lista de conectores ocupados
+}
+
+/***********************************************************/
+
+void Piece::esborrarConectorOcupado(void)
+{
+	//Eliminar el conector ocupado actual
+	conOcupados.Esborrar();
+}
+
+
+/***********************************************************/
+
+bool Piece::esborrarConectorOcupado(int id)
+{
+
+	//return conOcupados.Esborrar(pCon);
+	Conector *pCon;
+	bool trobat=false;
+
+	//VIGILAR QUE NO AFECTE A LA LISTA DE CONECTORES OCUPADOS!!!!!!!
+
+	conOcupados.Primero();
+	while(!conOcupados.Fin() && !trobat)
+	{
+		pCon=conOcupados.Actual();
+		if(id==pCon->obtenerId())
+		{
+			trobat=true;
+			conOcupados.Esborrar(); //Borramos el actual
+		}
+		else conOcupados.Siguiente();
+	}
+
+	return trobat;
+
+}
+
+/***********************************************************/
+
+Conector * Piece::obtenerActualOcupado(void)
+{
+	//Obtiene el conector actual ocupado
+	return conOcupados.Actual();
+}
+
+/***********************************************************/
+
+void Piece::primeroOcupado(void)
+{
+	//Se sitúa en el primer conector ocupado
+	conOcupados.Primero();
+}
+
+/***********************************************************/
+
+void Piece::siguienteOcupado(void)
+{
+	//Se sitúa en el siguiente conector ocupado
+	conOcupados.Siguiente();
+}
+
+/***********************************************************/
+
+void Piece::ultimoOcupado(void)
+{
+	//Nos sitúa en el último conector de la lista de conectores ocupados
+	conOcupados.Ultimo();
+}
+
+/***********************************************************/
+
+void Piece::anteriorOcupado(void)
+{
+	//Nos sitúa sobre el conector anterior al actual en la lista de conectores ocupados
+	conOcupados.Anterior();
+}
+
+/***********************************************************/
+
+bool Piece::finOcupado(void)
+{
+	//Cierto si hemos llegado al final de la lista de conectores ocupados
+	return conOcupados.Fin();
+
+}
+
+/***********************************************************/
+
+bool Piece::vaciaOcupado(void)
+{
+	//Cierto si la lista de conectores ocupados está vacía
+	return conOcupados.Vacia();
+
+}
+
+/***********************************************************/
+
+bool Piece::llenaOcupado(void)
+{
+	//Siempre es falso,ya que la lista está implementada dinámicamente
+	return conOcupados.Llena();
+}
+
+/***********************************************************/
+
+int Piece::nElementosOcupado(void)
+{
+	//Devuelve le número de conectores que hay en la lista de conectores ocupados
+	return conOcupados.NElementos();
+}
+
+/***********************************************************/
+
+void Piece::piezaVisitada(void)
+{
+	//Ponemos la pieza como visitada
+	visitada=true;
+}
+
+/***********************************************************/
+
+void Piece::piezaNoVisitada(void)
+{
+	//Ponemos la pieza como no visitada
+	visitada=false;
+}
+
+/***********************************************************/
+
+void Piece::piezasNoVisitadas(void)
+{
+	Conector *conectado;
+
+	if(visitada)
+	{
+		visitada=false;
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			conectado=conOcupados.Actual();
+			conectado->madreNoVisitadaConector();
+			conOcupados.Siguiente();
+		}
+	}
+}
+
+/***********************************************************/
+
+void Piece::piezasNoVisitadas1(void)
+{
+	Conector *conectado;
+
+	if(visitada1)
+	{
+		visitada1=false;
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			conectado=conOcupados.Actual();
+			conectado->madreNoVisitadaConector1();
+			conOcupados.Siguiente();
+		}
+	}
+}
+
+/***********************************************************/
+
+bool Piece::obtenerEstadoVisita(void)
+{
+	//Devuelve cierto o falso, según si la pieza ha sido visitada o no
+	return visitada;
+}
+
+/***********************************************************/
+
+void Piece::actualizarRotacion(float *rot)
+{
+	m_fRotation[0]=rot[0];
+	m_fRotation[1]=rot[1];
+	m_fRotation[2]=rot[2];
+	m_fRotation[3]=rot[3];
+}
+
+/***********************************************************/
+
+void Piece::actualizarPosicion(float *pos)
+{
+	m_fPosition[0]=pos[0];
+	m_fPosition[1]=pos[1];
+	m_fPosition[2]=pos[2];
+}
+
+/***********************************************************/
+
+void Piece::comunicarTraslacion(sirVector3d t)
+{
+	Conector *actual;
+
+	traslacionActivada=true;
+	if(!visitada)
+	{
+		visitada=true;
+
+		transformada=true;
+
+		transformacion[0][3]=t[0];
+		transformacion[1][3]=t[1];
+		transformacion[2][3]=t[2];
+
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			actual=conOcupados.Actual();
+			actual->moverConector(t);
+			conOcupados.Siguiente();
+		}
+
+
+		//Mirar lo de porqué no coge el otro conector de la lista
+		//Problema en el FIN de la lista???
+/*		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			actual=conOcupados.Actual();
+			actual->moverConector(t);
+			conOcupados.Siguiente();
+		}
+*/	}
+}
+
+/***********************************************************/
+
+void Piece::comunicarRotacion(sirMat4d r,bool sobreZ)
+{
+	Conector *pCon;
+
+//	traslacionActivada=true;
+	rotacionActivada=true;
+
+	if(!visitada)
+	{
+		visitada=true;
+		if(!RotacionManual)
+		{
+			ejeZ=sobreZ;
+			transformada=true;
+			transformacion=r;
+		}
+		else
+		{
+			RotacionManual=false;
+		}
+
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			pCon=conOcupados.Actual();
+			if(pCon->typeGear())
+			{
+				pCon->rotarConector(r,pCon->obtenerNdientes());
+			}
+			else{pCon->rotarConector(r,false);}
+			conOcupados.Siguiente();
+		}
+	}
+}
+
+/***********************************************************/
+
+void Piece::comunicarRotacion(float rot[4],double rthoot,sirVector3d posicion)
+{
+	Conector *pCon;
+	sirMat4d r,C2W;
+	sirVector4d normal (0,0,1,0), vector;
+	float alfa;
+	sirMat4d rotacion,matCentroPos,matCentroNeg;
+	float pos[3];
+
+	Matrix matriz;
+
+//	traslacionActivada=true;
+	rotacionActivada=true;
+	if(!visitada)
+	{
+		visitada=true;
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			pCon=conOcupados.Actual();
+
+			if(pCon->typeGear())
+			{
+//				imprimirDouble(rthoot);
+				if((strcmp(pCon->obtenerNombre(),"Worm")==0) || (strcmp(pCon->obtenerNombre(),"Rack")==0))
+					alfa=(float)rthoot;
+				else if (antesrack)
+				{
+					alfa=(float)rthoot;
+					antesrack=false;
+				}
+				else
+					alfa=(float)(rthoot/pCon->obtenerNdientes());
+				//matriz.Rotate(alfa,rot[0],rot[1],rot[2]);
+
+				matriz.FromAxisAngle(rot,alfa);
+				r.introducir(matriz.m);
+
+			}
+
+			if(pCon->typeGear())
+			{
+				ejeZ=true;
+				transformada=true;
+//				imprimirMatriz(r);
+				transformacion=r;
+
+				pCon->rotarConector(r,pCon->obtenerNdientes());
+			}
+			else
+			{
+				GetPosition(pos);
+
+				matCentroPos[0][3]=pos[0];
+				matCentroPos[1][3]=pos[1];
+				matCentroPos[2][3]=pos[2];
+
+				matCentroNeg[0][3]=-pos[0];
+				matCentroNeg[1][3]=-pos[1];
+				matCentroNeg[2][3]=-pos[2];
+
+				r=r*matCentroNeg;
+				r=matCentroPos*r;
+
+				pCon->rotarConector(r,false);
+			}
+
+			conOcupados.Siguiente();
+		}
+	}
+
+}
+
+/***********************************************************/
+
+void Piece::transformar(unsigned short nTime,bool bAnimation,bool bAddKey)
+{
+	Conector *pCon;
+	Matrix m1(m_fRotation,m_fPosition),m2;
+	sirMat4d matrizPieza, auxiliar;
+	double aux[16];
+	float pos[3],rot[4];
+
+
+	if(!visitada)
+	{
+		visitada=true;
+		if(transformada)
+		{
+			if(traslacionActivada)
+			{
+				traslacionActivada=false;
+				opbevel=false;
+
+				//Actualizamos la posición de la pieza + ChangeKey
+				Move(nTime,bAnimation,bAddKey,(float)transformacion[0][3],(float)transformacion[1][3],(float)transformacion[2][3]);
+
+			}
+			else
+			{
+				rotacionActivada=false;
+
+//				imprimirMatriz(transformacion);
+
+				matrizPieza.introducir(m1.m);
+				matrizPieza=transformacion*matrizPieza;
+
+
+				matrizPieza.obtenerMatriz(aux);
+				m2.crear(aux);
+				m2.GetTranslation(pos/*m_fPosition*/);
+				m2.ToAxisAngle(rot/*m_fRotation*/);
+
+				//Hay que aplicarle la rotación también al centro de la pieza a rotar!!!
+				if(!opbevel)
+				{
+					m_fPosition[0]=pos[0];
+					m_fPosition[1]=pos[1];
+					m_fPosition[2]=pos[2];
+				}
+				opbevel=false;
+
+				m_fRotation[0]=rot[0];
+				m_fRotation[1]=rot[1];
+				m_fRotation[2]=rot[2];
+				m_fRotation[3]=rot[3];
+
+//				vale=1;
+
+				//Podría preguntar para ver si no se ha modificado no actualizar la animación.
+
+				//Modificamos la posición en los pasos de animación.
+				if (!ejeZ)
+					{ ChangeKey(nTime,bAnimation,bAddKey,m_fPosition,LC_PK_POSITION);}
+				//Actualizamos la rotación en los pasos de animación
+				ChangeKey (nTime,bAnimation,bAddKey,m_fRotation,LC_PK_ROTATION);
+			}
+
+			//Actualizamos el Bounding Box de la pieza
+			UpdatePosition(nTime,bAnimation);
+
+			ejeZ=false;
+			transformada=false;
+			transformacion=identity3D();
+		}
+
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			pCon=conOcupados.Actual();
+			pCon->transformarConector(nTime,bAnimation,bAddKey);
+			conOcupados.Siguiente();
+		}
+	}
+
+}
+
+/***********************************************************/
+
+Conector *Piece::conectorCercano(LC_CLICKLINE linea)
+{
+	Conector *conector,*cercano=NULL;
+	double distmin,aux;
+
+	conLibres.Primero();
+	if(!conLibres.Fin())
+	{
+		conector=conLibres.Actual();
+		cercano=conector;
+		distmin=cercano->distanciaMinima2(linea);
+
+		conLibres.Siguiente();
+		while(!conLibres.Fin())
+		{
+			conector=conLibres.Actual();
+			aux=conector->distanciaMinima2(linea);
+			if(aux<distmin)
+			{
+				distmin=aux;
+				cercano=conector;
+			}
+			conLibres.Siguiente();
+		}
+	}
+
+	//NO hace falta llamar a ocupar-->Aquí solo se pregunta por el má cercano.
+	//LAs actualizaciones ya se realizarán en el momento del assembling.
+
+	//Para los conectores Extreme determinará que extremo queda ocupado.
+	//if(cercano!=NULL) cercano->ocupar(ClickLine); //En el caso de los Stud/StudInlet no hará nada.
+
+	return cercano;
+}
+
+/***********************************************************/
+
+Conector *Piece::conectorOcupadoCercano(LC_CLICKLINE linea)
+{
+	Conector *conector,*cercano=NULL;
+	double distmin,aux;
+
+	conOcupados.Primero(); //MIRAMOS EN LOS OCUPADOS-->PROBLEMA AXLE/AXLEHOLE/CYLINDRICALHOLE!!!
+	//Posible poner el conector como ocupado y libre a la vez!!!
+	//-->O introducir un Extremo con un extremo ocupado y otro libre,
+	//ponerlo en la dos listas de la pieza.
+	//Si todo ocupado-->Lo quitamos de la lista de conLibres.
+	//Si todo libre-->Lo quitamos de la lista de conOcupados.
+	if(!conOcupados.Fin())
+	{
+		conector=conOcupados.Actual();
+		cercano=conector;
+		distmin=cercano->distanciaMinima2(linea);
+		//distmin=cercano->distanciaMinima2Ocupado(linea);
+
+		conOcupados.Siguiente();
+		while(!conOcupados.Fin())
+		{
+			conector=conOcupados.Actual();
+			aux=conector->distanciaMinima2(linea);
+			//aux=conector->distanciaMinima2Ocupado(linea);
+			if(aux<distmin)
+			{
+				distmin=aux;
+				cercano=conector;
+			}
+			conOcupados.Siguiente();
+		}
+	}
+
+  //NO hace falta hacer nada más
+
+	return cercano;
+}
+
+
+/***********************************************************/
+
+void Piece::crearConector(char *nombre,Diccionario d)
+{
+	Conector *pConector;
+
+	if(!strcmp(nombre,"stud")) pConector=new Stud(idConector,this); //creamos stud
+	else if(!strcmp(nombre,"studInlet")) {pConector=new StudInlet(idConector,this);} //creamos studInlet
+	else if(!strcmp(nombre,"axle")) pConector=new Axle(idConector,this); //creamos axle
+	else if(!strcmp(nombre,"axleHole")) pConector=new AxleHole(idConector,this); //creamos axleHole
+	else if(!strcmp(nombre,"Sphere")) pConector=new Sphere(idConector,this);//creamos Sphere
+	else if(!strcmp(nombre,"Spur")) pConector=new Spur(idConector,this);//creamos Spur
+	else if(!strcmp(nombre,"Bevel")) pConector=new Bevel(idConector,this);//creamos Bevel
+	else if(!strcmp(nombre,"Crown")) pConector=new Crown(idConector,this);//creamos Crown
+	else if(!strcmp(nombre,"Worm")) pConector=new Worm(idConector,this);//creamos Worm
+	else if(!strcmp(nombre,"Rack")) pConector=new Rack(idConector,this);//creamos Rack
+	else if(!strcmp(nombre,"Motor")) {pConector=new Motor(idConector,this); rotor=pConector;}// pieza tiene acceso al unico motor
+	else pConector=new CylindricalHole(idConector,this); //creamos cylindricalHole
+	pConector->init(d); //Introducimos el resto de información del conector
+	//El propio conector parsea su información!!!
+
+	conLibres.Introducir(pConector);
+	idConector=idConector+1;
+
+	//Para que al salir del método no se elimine el conector.
+	pConector=NULL;
+}
+
+
+/***********************************************************/
+
+void Piece::buscarHermanos(void)
+{
+	Conector *actual,*hermano1,*hermano2;
+	int nHermanos=0,i,id,idHermano;
+	bool trobat=false;
+
+	conLibres.Primero();
+	while(!conLibres.Fin())
+	{
+		actual=conLibres.Actual();
+		if(actual->tengoHermano()) nHermanos=nHermanos+1;
+		conLibres.Siguiente();
+	}
+
+	for(i=0;i<(nHermanos/2);i++)
+	{
+		conLibres.Primero();
+		while(!conLibres.Fin() && !trobat)
+		{
+			hermano1=conLibres.Actual();
+			if(hermano1->tengoHermano() && (!hermano1->obtenerVisitado())) trobat=true;
+			else conLibres.Siguiente();
+		}
+
+		if(trobat)
+		{
+			id=hermano1->obtenerIdLCI();
+			hermano1->conectorVisitado();
+		}
+
+		trobat=false;
+
+		conLibres.Primero();
+		while(!conLibres.Fin() && !trobat)
+		{
+			hermano2=conLibres.Actual();
+			if(hermano2->tengoHermano() && (!hermano2->obtenerVisitado()))
+			{
+				idHermano=hermano2->obtenerIdLCIHermano();
+				if(id==idHermano)
+				{
+					trobat=true;
+					hermano2->conectorVisitado();
+					//Se apunten mútuamente.
+					hermano1->introducirHermano(hermano2);
+					hermano2->introducirHermano(hermano1);
+				}
+				else conLibres.Siguiente();
+
+			}
+			else conLibres.Siguiente();
+		}
+		trobat=false;
+	}
+
+	//Ponemos a todos los conectores como no visitados.
+	conLibres.Primero();
+	while(!conLibres.Fin())
+	{
+		actual=conLibres.Actual();
+		actual->conectorNoVisitado();
+		conLibres.Siguiente();
+	}
+
+	actual=NULL;
+	hermano1=NULL;
+	hermano2=NULL;
+}
+
+
+/***********************************************************/
+
+int Piece::leerFicheroLCI(char *path)
+{
+	//Si devulve -1-->Fichero no existe o el path está mal
+	//            1-->Fallo sintáctico en el fichero .lci
+	//            0-->Todo correcto
+
+	//El compararTag deja "indice" apuntando al primer carácter de la línea!!!
+	//La transformación de coordenadas LDraw-->LeoCAD las realizará el propio conector!!!
+	int i;
+	i=parser(path);
+	if(i==0)
+		//Buscamos hermanos dentro de los conectores.
+		buscarHermanos(); //-->CANVIARLO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	return i;
+}
+
+/***********************************************************/
+
+void Piece::actualizarConectoresLibres(void)
+{
+	Conector *actual=NULL;
+
+	conLibres.Primero();
+	while(!conLibres.Fin())
+	{
+		actual=conLibres.Actual();
+		if(!actual->actualizarConectoresLibres()) conLibres.Siguiente();
+	}
+}
+
+/***********************************************************/
+
+void Piece::propagarAssembling(Piece *pPieza,Administrador *adminis)
+{
+	Conector *pCon1=NULL,*pCon2=NULL;
+	//bool conexion2=false;
+	//int conexion1=0;
+
+	conLibres.Primero();
+	while(!conLibres.Fin())
+	{
+		pCon1=conLibres.Actual();
+		pPieza->primeroLibre();
+		while(!pPieza->finLibre())
+		{
+			pCon2=pPieza->obtenerActualLibre();
+			if(adminis->ExisteConector(pCon1,pCon2,'v')/*pCon1->puedeConectar(pCon2)*/ && adminis->gestionVeri(pCon1,pCon2))//pCon1->conexionSecundaria(pCon2))
+			{
+				pCon1->introducirConector(pCon2);
+				pCon2->introducirConector(pCon1);
+
+				conOcupados.Introducir(pCon1);
+				pPieza->introducirConectorOcupado(pCon2);
+			}
+			pPieza->siguienteLibre();
+		}
+		conLibres.Siguiente();
+	}
+
+	//Hay que hacerlo desde fuera (PROJECT) porque sinó pueden quedar conexiones sin hacer!!!!
+}
+
+/***********************************************************/
+
+Conector *Piece::conectorCercanoDeslizar(LC_CLICKLINE linea)
+{
+	Conector *actual=NULL,*cercano=NULL;
+	Lista<Conector*> lista;
+	double aux,distMin;
+
+	if(conOcupados.Vacia()) return NULL;
+	else
+	{
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			actual=conOcupados.Actual();
+			if(actual->puedeDeslizar()) lista.Introducir(actual);
+			conOcupados.Siguiente();
+		}
+
+		if(lista.Vacia()) return NULL;
+		else
+		{
+			lista.Primero();
+			actual=lista.Actual();
+			cercano=actual;
+			distMin=cercano->distanciaMinima2(linea);
+			lista.Siguiente();
+			while(!lista.Fin())
+			{
+				actual=lista.Actual();
+				aux=actual->distanciaMinima2(linea);
+				if(aux<distMin)
+				{
+					distMin=aux;
+					cercano=actual;
+				}
+				lista.Siguiente();
+			}
+			return cercano;
+		}
+	}
+}
+
+/***********************************************************/
+
+bool Piece::puedeDeslizar(void)
+{
+	//En cuanto encontremos un conector que pueda realizar la acción
+	//de deslizar, no hará falta seguir buscando.
+
+	Conector *actual;
+	bool trobat=false;
+
+	conOcupados.Primero();
+	while(!conOcupados.Fin() && !trobat)
+	{
+		actual=conOcupados.Actual();
+		if(actual->puedeDeslizar()) trobat=true;
+		else conOcupados.Siguiente();
+	}
+
+	return trobat;
+}
+
+/***********************************************************/
+
+Lista<Piece*> Piece::listaPiezasConectadas(Conector *dinamico)
+{
+	Lista<Piece*> conectadas;
+	Conector *actual;
+
+	if(!visitada)
+	{
+		visitada=true; //Ponemos el flag visitada a true.
+		conectadas.Introducir(this); //Introducimos la pieza en la lista de conectadas a devolver.
+
+		conOcupados.Primero(); //Empezamos a recorrer todos los conectores conectados de la pieza.
+		while(!conOcupados.Fin())
+		{
+			actual=conOcupados.Actual();
+			if(actual!=dinamico)
+			{
+				//Concatenamos las conectadas hasta ahora más las del conector actual.
+				conectadas.Unir(actual->listaPiezasConectadasConector());
+				//conectadas=conectadas+actual->listaPiezasConectadasConector();
+			}
+			conOcupados.Siguiente();
+		}
+	}
+
+	return conectadas;
+}
+
+/***********************************************************/
+
+Lista<Piece*> Piece::listaPiezasConectadas(void)
+{
+	Lista<Piece*> conectadas;
+	Conector *actual;
+
+	if(!visitada)
+	{
+		visitada=true; //Ponemos el flag visitada a true.
+		conectadas.Introducir(this); //Introducimos la pieza en la lista de conectadas a devolver.
+
+		conOcupados.Primero(); //Empezamos a recorrer todos los conectores conectados de la pieza.
+		while(!conOcupados.Fin())
+		{
+			actual=conOcupados.Actual();
+			//Concatenamos las conectadas hasta ahora más las del conector actual.
+			conectadas.Unir(actual->listaPiezasConectadasConector());
+			//conectadas=conectadas+actual->listaPiezasConectadasConector();
+			conOcupados.Siguiente();
+		}
+	}
+
+	return conectadas;
+}
+
+/***********************************************************/
+
+sirMat4d Piece::matrizPieza(void)
+{
+	Matrix m(m_fRotation,m_fPosition);
+	sirMat4d matriz;
+
+	matriz.introducir(m.m);
+	return matriz;
+}
+
+/***********************************************************/
+
+void Piece::borrar(void)
+{
+	Conector *actual;
+
+	if(conOcupados.NElementos()!=0)
+	{
+		conOcupados.Primero();
+		while(!conOcupados.Vacia())
+		{
+			actual=conOcupados.Actual(); //Siempre se obtiene el que se va a borrar.
+			actual->desconectar(); //BIÉN!!!???
+			//El desconectar() ya actualiza las listas de conOcupados y conLibres de su madre.
+			//Por eso no hay que hacer conOucpados.Esborrar().
+		}
+
+	}
+
+	//Al terminar de ejecutarse este método, la pieza solo tendrá conectores libres!!!
+}
+
+/***********************************************************/
+
+void Piece::borrarConectoresOcupados(void)
+{
+	if(conOcupados.NElementos()!=0)
+	{
+		conOcupados.Primero();
+		while(!conOcupados.Vacia())
+		{
+			conOcupados.Esborrar(); //Esborramos el elemento actual
+		}
+	}
+}
+
+/***********************************************************/
+
+void Piece::borrarConectoresLibres(void)
+{
+	if(conLibres.NElementos()!=0)
+	{
+		conLibres.Primero();
+		while(!conLibres.Vacia())
+		{
+			conLibres.Esborrar(); //Esborramos el elemento actual
+		}
+	}
+}
+
+/***********************************************************/
+
+void Piece::actualizarBoundingBox(void)
+{
+	Matrix m(m_fRotation,m_fPosition);
+	BoundingBoxCalculate(&m,m_pPieceInfo->m_fDimensions);
+
+	for (int i = 0; i < m_pPieceInfo->m_nConnectionCount; i++)
+	{
+		m.TransformPoint(m_pConnections[i].center, m_pPieceInfo->m_pConnections[i].center);
+	}
+}
+
+/***********************************************************/
+
+bool Piece::assemblingConLazosCadenas(Conector *final)
+{
+	Conector *pCon;
+	bool cadena=false;
+
+	if(!visitada)
+	{
+		visitada=true;
+		if(conLibres.Existe(final)) cadena=true;//return true;
+		else
+		{
+			conOcupados.Primero();
+			while((!conOcupados.Fin()) && (!cadena))
+			{
+				pCon=conOcupados.Actual();
+				if(pCon->conLazosCadenasConector(final)) cadena=true;
+				conOcupados.Siguiente();
+			}
+			//return cadena;
+		}
+	}
+	return cadena;
+	//else return false; //CUIDADÍN!!!
+}
+
+/***********************************************************/
+
+bool Piece::caminoDeAssemblings(Conector *final,Lista<Conector*> conDeslizados)
+{
+	Conector *actual;
+	bool camino=false;
+
+	if(!/*visitada*/visitada1)
+	{
+		/*visitada*/visitada1=true;
+		if(conOcupados.Existe(final)) return true;
+		else
+		{
+			conOcupados.Primero();
+			while((!conOcupados.Fin()) && (!camino))
+			{
+				actual=conOcupados.Actual();
+				//if(actual->caminoDeAssemblingsConector(final,conDeslizados)) camino=true;
+				//else conOcupados.Siguiente();
+				if(!conDeslizados.Existe(actual)) //NO SE SI EN LA PIEZA TAMBIÉN HACE FALTA!!!!!!!!!!
+				{
+					if(actual->caminoDeAssemblingsConector(final,conDeslizados)) camino=true;
+					else conOcupados.Siguiente();
+				}
+				else conOcupados.Siguiente();
+			}
+			return camino;
+		}
+	}
+	else return false;
+}
+
+/***********************************************************/
+
+//Pongo como no visitados todos los conectores de la pieza.
+void Piece::conectoresNoVisitados(void)
+{
+	Conector *actual;
+
+	conLibres.Primero();
+	while(!conLibres.Fin())
+	{
+		actual=conLibres.Actual();
+		actual->conectorNoVisitado();
+		conLibres.Siguiente();
+	}
+
+	conOcupados.Primero();
+	while(!conOcupados.Fin())
+	{
+		actual=conOcupados.Actual();
+		actual->conectorNoVisitado();
+		conOcupados.Siguiente();
+	}
+}
+
+/***********************************************************/
+
+void Piece::resetearAssembling(void)
+{
+	//La diferencia con borrarAssemblings es que
+	Conector *pCon=NULL;
+
+	if(!visitada)
+	{
+		visitada=true;
+
+		if(conOcupados.NElementos()!=0)
+		{
+			conOcupados.Primero();
+			while(!conOcupados.Fin())
+			{
+				pCon=conOcupados.Actual();
+				//Para cada conector ocupado, borramos a sus conectados.
+				pCon->resetearAssemblingConector();
+				//Introduzco el conector como libre de la pieza.
+				conLibres.Introducir(pCon);
+				//Pasamos al siguiente conector ocupado.
+				conOcupados.Siguiente();
+			}
+
+			conOcupados.Primero();
+			while(!conOcupados.Vacia())
+			{
+				//Esborro todos los conectores ocupados de la pieza.
+				conOcupados.Esborrar();
+			}
+		}
+	}
+}
+
+
+/***********************************************************/
+
+bool Piece::operator==(Piece c)
+{
+	return id==c.id;
+}
+
+/***********************************************************/
+
+int Piece::obtenerId(void)
+{
+	return id;
+}
+
+/***********************************************************/
+
+int Piece::nConectoresLibres(void)
+{
+	Conector *ocupado;
+	Piece *madre;
+	int libres=0;
+
+	if(!visitada)
+	{
+		visitada=true;
+		libres=conLibres.NElementos();
+		conOcupados.Primero();
+		while(!conOcupados.Fin())
+		{
+			ocupado=conOcupados.Actual();
+			madre=ocupado->obtenerMadre();
+			libres=libres+(madre->nConectoresLibres());
+			conOcupados.Siguiente();
+		}
+	}
+
+	return libres;
+}
+
+/***********************************************************/
+
+Conector *Piece::buscarConectorOcupado(int id)
+{
+	bool trobat=false;
+	Conector *pCon=NULL;
+
+	conOcupados.Primero();
+	while(!conOcupados.Fin() && !trobat)
+	{
+		pCon=conOcupados.Actual();
+		if(id==pCon->obtenerId()) trobat=true;
+		else conOcupados.Siguiente();
+	}
+
+	if(trobat) return pCon;
+	else return NULL;
+}
+
+/***********************************************************/
+
+Conector *Piece::buscarConectorLibre(int id)
+{
+	bool trobat=false;
+	Conector *pCon=NULL;
+
+	conLibres.Primero();
+	while(!conLibres.Fin() && !trobat)
+	{
+		pCon=conLibres.Actual();
+		if(id==pCon->obtenerId()) trobat=true;
+		else conLibres.Siguiente();
+	}
+
+	if(trobat) return pCon;
+	else return NULL;
+}
+
+/***********************************************************/
+
+Conector *Piece::obtenerMotor()
+{
+	return rotor;
+}
+
+/***********************************************************/
+void Piece::actualizar(unsigned short nTime,bool bAnimation,bool bAddKey)
+{
+/*	imprimirFloat(m_fPosition[0]);
+	imprimirFloat(m_fPosition[1]);
+	imprimirFloat(m_fPosition[2]);
+
+	imprimirFloat(m_fRotation[0]);
+	imprimirFloat(m_fRotation[1]);
+	imprimirFloat(m_fRotation[2]);
+	imprimirFloat(m_fRotation[3]);
+*/
+	m_fRotation[0]=0;
+	m_fRotation[1]=0;
+	m_fRotation[2]=1;
+	m_fRotation[3]=90;
+	ChangeKey (nTime,bAnimation,bAddKey,m_fRotation,LC_PK_ROTATION);
+
+
+
+	//Actualizamos el Bounding Box de la pieza
+	UpdatePosition(nTime,bAnimation);
+
+}
+void Piece::Imprimirrotacion()
+{
+	imprimirFloat(m_fRotation[0]);
+	imprimirFloat(m_fRotation[1]);
+	imprimirFloat(m_fRotation[2]);
+	imprimirFloat(m_fRotation[3]);
+}

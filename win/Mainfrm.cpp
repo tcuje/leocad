@@ -101,6 +101,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//{{AFX_MSG_MAP(CMainFrame)
 	ON_WM_CREATE()
 	ON_WM_CLOSE()
+	ON_WM_TIMER()
 	ON_WM_SETFOCUS()
 	ON_WM_MEASUREITEM()
 	ON_WM_MENUCHAR()
@@ -126,10 +127,16 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_MESSAGE(WM_LC_UPDATE_SETTINGS, UpdateSettings)
 	// Toolbar show/hide
 	ON_COMMAND_EX(ID_VIEW_ANIMATION_BAR, OnBarCheck)
+	/***********************FRAN***********************/
+	ON_COMMAND_EX(ID_VIEW_ASSEMBLING_BAR, OnBarCheck)
+	/**********************FRAN***********************/
 	ON_COMMAND_EX(ID_VIEW_TOOLS_BAR, OnBarCheck)
 	ON_COMMAND_EX(ID_VIEW_PIECES_BAR, OnBarCheck)
 	ON_COMMAND_EX(ID_VIEW_MODIFY_BAR, OnBarCheck)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_ANIMATION_BAR, OnUpdateControlBarMenu)
+	/***********************FRAN***********************/
+	ON_UPDATE_COMMAND_UI(ID_VIEW_ASSEMBLING_BAR, OnUpdateControlBarMenu)
+	/**********************FRAN***********************/
 	ON_UPDATE_COMMAND_UI(ID_VIEW_TOOLS_BAR, OnUpdateControlBarMenu)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_PIECES_BAR, OnUpdateControlBarMenu)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_MODIFY_BAR, OnUpdateControlBarMenu)
@@ -201,6 +208,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndAnimationBar.SetWindowText (_T("Animation"));
 	m_wndAnimationBar.EnableDocking(CBRS_ALIGN_ANY);
 
+	/****************FRAN***************/
+	if(!m_wndAssemblingBar.Create(this, WS_CHILD | WS_VISIBLE | CBRS_TOP, ID_VIEW_ASSEMBLING_BAR) ||
+		!m_wndAssemblingBar.LoadToolBar(IDR_ASSEMBLING))
+	{
+		TRACE0("Failed to create toolbar\n");
+		return -1; //Fallo al crear la barra de herramientas del assembling
+	}
+
+	m_wndAssemblingBar.SetBarStyle(m_wndAssemblingBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC);
+	m_wndAssemblingBar.SetWindowText (_T("Assembling"));
+	m_wndAssemblingBar.EnableDocking(CBRS_ALIGN_ANY);
+	/***************FRAN***************/
+
 	if (!m_wndPiecesBar.Create(_T("Pieces"), this, CSize(200, 100),
 		TRUE, ID_VIEW_PIECES_BAR))
 	{
@@ -240,6 +260,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndToolsBar.GetWindowRect(&rect);
 	rect.OffsetRect(1,0);
 	DockControlBar(&m_wndAnimationBar, AFX_IDW_DOCKBAR_TOP, &rect);
+	/********************FRAN*********************/
+	DockControlBar(&m_wndAssemblingBar, AFX_IDW_DOCKBAR_TOP, &rect);
+	/*******************FRAN*********************/
 
 	if (theApp.GetProfileInt(_T("Settings"), _T("ToolBarVersion"), 0) == TOOLBAR_VERSION)
 		LoadBarState("Toolbars");
@@ -259,6 +282,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
   console.SetWindowCallback (&mainframe_console_func, m_wndSplitter.GetPane (1, 0));
 
+	// CG: The following line was added by the Splash Screen component.
+	CSplashWnd::ShowSplashScreen(this);
 	return 0;
 }
 
@@ -795,6 +820,59 @@ BOOL CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
 			project->HandleCommand(LC_EDIT_SELECT_BYNAME, 0);
 		} break;
 
+		/********************FRAN*******************/
+			//AQUÍ SOLO VAN LOS BOTONES QUE ENSEÑAN CUADROS DE DIÁLOGOS...CREO!!!!!!?????
+		//case ID_FRAN_NUMERAR_CONECTORS: {
+		//	project->HandleCommand(LC_NUMERAR....,0);
+		//} break;
+		//Esto no va aquí!!!
+		case ID_FRAN_ASSEMBLING_CONECTORS: {
+			project->HandleCommand(LC_FRAN_ASSEMBLING_CONECTORS,0);
+		} break;
+
+		case ID_FRAN_SLIDE: {
+			project->HandleCommand(LC_FRAN_SLIDE,0);
+			project->SetAction(LC_ACTION_FRAN_SLIDE); //Para poder cojer después con el mouse.
+		} break;
+
+		case ID_FRAN_DISCONECT_ASSEMBLING: {
+			project->HandleCommand(LC_FRAN_DISABLE_ASSEMBLING,0);
+			project->SetAction(LC_ACTION_FRAN_DISABLE_ASSEMBLING);
+		} break;
+
+		case ID_FRAN_DISCONECT_ALL: {
+			project->HandleCommand(LC_FRAN_DISABLE_ALL,0);
+			project->SetAction(LC_ACTION_FRAN_DISABLE_ALL);
+		} break;
+
+		//Me parece que esto no va aquí!!!!!!
+		//esto es para los menús y yo busco para los botones!!!!!!!
+		case ID_FRAN_SELECT_CONECTOR: {
+			project->HandleCommand(LC_FRAN_EDIT_SELECT_CONECTOR,0);
+		} break;
+
+		case ID_FRAN_SELECT_LCI_DIRECTORY: {
+			project->HandleCommand(LC_FRAN_SELECT_LCI_DIRECTORY,0);
+		} break;
+
+		/*case ID_FRAN_ENABLE_ASSEMBLING: {
+			project->HandleCommand(LC_FRAN_ENABLE_ASSEMBLING,0);
+		} break;*/
+
+		case ID_FRAN_ENABLE_ASSEMBLING: {
+			project->HandleCommand(LC_FRAN_ENABLE_ASSEMBLING,0);
+		} break;
+		/********************FRAN*******************/
+		/********************XUS********************/
+		case ID_XUS_PLAY_MOTOR:{
+			(!tengoMotor)?SetTimer(101,50,NULL):KillTimer(101);
+
+			project->HandleCommand(LC_XUS_PLAY_MOTOR,0);
+		}break;
+		case ID_XUS_PRUEVA:{
+			project->HandleCommand(LC_XUS_PRUEVA,0);
+		}break;
+		/********************XUS********************/
 		case ID_PIECE_INSERT: {
 			project->HandleCommand(LC_PIECE_INSERT, 0);
 		} break;
@@ -1040,4 +1118,12 @@ BOOL CMainFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
   ((CRichEditView *) m_wndSplitter.GetPane (1, 0))->GetRichEditCtrl ().SetReadOnly (TRUE);
 
   return TRUE;
+}
+
+void CMainFrame::OnTimer(UINT nIDEvent)
+{
+	if(tengoMotor)
+		project->EjecutarMotor();
+
+	CWnd ::OnTimer(nIDEvent);
 }

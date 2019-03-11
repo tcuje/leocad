@@ -12,6 +12,11 @@
 #include "pieceinf.h"
 #include "texture.h"
 #include "piece.h"
+/********FRAN*********/
+#include "conector.h"
+#include "Resource.h"
+#include "utilidades.h"
+/*********************/
 #include "camera.h"
 #include "light.h"
 #include "group.h"
@@ -26,6 +31,9 @@
 #include "curve.h"
 #include "mainwnd.h"
 #include "view.h"
+
+/********XUS*************/
+#include "Administrador.h"
 
 // FIXME: temporary function, replace the code !!!
 void SystemUpdateFocus (void* p, int i)
@@ -74,6 +82,29 @@ static LC_VIEWPORT viewports[14] = {
 
 Project::Project()
 {
+	/*************FRAN*************/
+	Motor=NULL;
+	tengoMotor=false;
+	RotacionManual=false;
+
+	antesrack=false;
+
+	wormthooth=0;
+	vale=0;
+
+	selectCon1=NULL;
+	selectCon2=NULL;
+	delAssembling1=NULL;
+	piezaDeslizar=NULL;
+	deslizarConector=NULL;
+	nSelect=0;
+	ensamblar=true;
+	desconectar=false;
+	desconectarPieza=false;
+	deslizar=false;
+	idConector=0;
+	recalcularConexiones=false;
+	/*************FRAN*************/
 	m_bModified = false;
 	m_bTrackCancel = false;
 	m_nTracking = LC_TRACK_NONE;
@@ -151,6 +182,16 @@ Project::~Project()
 
 	delete m_pTerrain;
 	delete m_pBackground;
+
+	/************FRAN*************/
+	Motor=NULL;
+	selectCon1=NULL;
+	selectCon2=NULL;
+	delAssembling1=NULL;
+	piezaDeslizar=NULL;
+	deslizarConector=NULL;
+	delete adminis;
+	/************FRAN*************/
 }
 
 
@@ -163,6 +204,18 @@ bool Project::Initialize(int argc, char *argv[], char* binpath, char* libpath)
   char *env_path;
   bool loaded = false;
 
+  /*********************FRAN********************/
+  adminis=new Administrador(binpath);
+  strcpy(directorioLCI,binpath);
+  idConector=0; //Cada vez que se crea un proyecto se vuelve el ID a cero
+  recalcularConexiones=false;
+  nSelect=0; //Número de conectores seleccionados==0
+  selectCon1=NULL;
+  selectCon2=NULL;
+  delAssembling1=NULL;
+  piezaDeslizar=NULL;
+  deslizarConector=NULL;
+  /*********************FRAN********************/
   strcpy (m_AppPath, binpath);
 
   // check if there's an environment variable for the piece library
@@ -640,6 +693,15 @@ void Project::DeleteContents(bool bUndo)
 		delete pGroup;
 	}
 
+	/***********FRAN**********/
+	//Borro la información necesaria
+	selectCon1=NULL;
+	selectCon2=NULL;
+	delAssembling1=NULL;
+	piezaDeslizar=NULL;
+	deslizarConector=NULL;
+	//Los conectores ya los esborrará la pieza al eliminar sus listas de conectores.
+	/***********FRAN**********/
 
 /*
 	if (!m_strTempFile.IsEmpty())
@@ -657,6 +719,9 @@ void Project::LoadDefaults(bool cameras)
 	unsigned long rgb;
 
 	// Default values
+	/***************FRAN**************/
+	SystemUpdateEnableAssembling(true);
+	/***************FRAN**************/
 	m_nActiveViewport = 0;
 	SystemUpdateViewport(0, m_nViewportMode);
 	m_nViewportMode = 0;
@@ -1620,6 +1685,17 @@ bool Project::OnNewDocument()
 //		pFrame->PostMessage (WM_LC_UPDATE_LIST, 1, m_nCurColor+1);
 // set cur group to 0
  
+
+	/*******FRAN*******/
+	selectCon1=NULL;
+	selectCon2=NULL;
+	delAssembling1=NULL;
+	piezaDeslizar=NULL;
+	deslizarConector=NULL;
+	nSelect=0;
+	recalcularConexiones=false;
+	/*******FRAN*******/
+
 	return true;
 }
 
@@ -1984,6 +2060,10 @@ static void BuildBSP(LC_BSPNODE* node, Piece* pList)
 
 void Project::RenderScene(bool bShaded, bool bDrawViewports)
 {
+	/***********************FRAN***********************/
+	Piece *madre1,*madre2,*madre3;
+	/***********************FRAN***********************/
+
   glViewport (0, 0, m_nViewX, m_nViewY);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2349,6 +2429,39 @@ void Project::RenderScene(bool bShaded, bool bDrawViewports)
 		    glEnable (GL_LIGHTING);
 		}
 	}
+
+	/**************FRAN************/
+	if(ensamblar)
+	{
+		if(selectCon1!=NULL)
+		{
+			madre1=selectCon1->obtenerMadre();
+			if(madre1->IsVisible(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation))
+			{
+				selectCon1->renderizarConector(0,0,0);
+			}
+		}
+
+		if(selectCon2!=NULL)
+		{
+			madre2=selectCon2->obtenerMadre();
+			if(madre2->IsVisible(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation))
+			{
+				//Dibujar conector
+				selectCon2->renderizarConector(0,0,0);
+			}
+		}
+
+		if(delAssembling1!=NULL)
+		{
+			madre3=delAssembling1->obtenerMadre();
+			if(madre3->IsVisible(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation))
+			{
+				delAssembling1->renderizarConector(1,0,0);
+			}
+		}
+	}
+	/**************FRAN************/
 }
 
 void Project::RenderViewports(bool bBackground, bool bLines)
@@ -2707,6 +2820,55 @@ void Project::RemovePiece(Piece* pPiece)
 
 	pPiece->RemoveConnections(m_pConnections);
 
+	/****************FRAN***************/
+
+	Piece *madre1,*madre2,*madre3,*madre4;
+
+	//Borrar los conectores ocupados de las piezas que estaban conectadas a la que se esborra!!!!!
+	//Lo hace el propio destructor de la pieza
+
+	/*Si eliminamos una pieza que tenía un conector seleccionado para ensamblar
+	  entonces hay que poner el conector seleccionado correspondiente a NULL.*/
+	if(ensamblar)
+	{
+		if(selectCon1!=NULL)
+		{
+			madre1=selectCon1->obtenerMadre();
+			if(madre1==pPiece)
+			{
+				selectCon1=NULL;
+				nSelect=nSelect-1;
+			}
+		}
+
+		if(selectCon2!=NULL)
+		{
+			madre2=selectCon2->obtenerMadre();
+			if(madre2==pPiece)
+			{
+				selectCon2=NULL;
+				nSelect=nSelect-1;
+			}
+		}
+
+		if(delAssembling1!=NULL)
+		{
+			madre3=delAssembling1->obtenerMadre();
+			if(madre3==pPiece) delAssembling1=NULL;
+		}
+
+		//Si la pieza a borrar es la que habíamos o estábamos deslizando, la ponemos a NULL.
+		if(piezaDeslizar!=NULL && pPiece==piezaDeslizar) piezaDeslizar=NULL;
+
+		if(deslizarConector!=NULL)
+		{
+			madre4=deslizarConector->obtenerMadre();
+			if(madre4==pPiece) deslizarConector=NULL;
+		}
+	}
+
+	/****************FRAN***************/
+
 	// TODO: remove from BSP
 }
 
@@ -2738,6 +2900,10 @@ bool Project::RemoveSelectedObjects()
 	void* pPrev;
 	bool removed = false;
 
+	Conector * aux;
+	int i;
+	bool trobat=false;
+
 	pPiece = m_pPieces;
 	while (pPiece)
 	{
@@ -2745,6 +2911,16 @@ bool Project::RemoveSelectedObjects()
 		{
 			Piece* pTemp;
 			pTemp = pPiece->m_pNext;
+
+			pPiece->primeroLibre();
+
+			for(i=1;i<=pPiece->nElementosLibre() && !trobat;i++)
+			{
+				aux=pPiece->obtenerActualLibre();
+				if(strcmp(aux->obtenerNombre(),"Motor")==0)
+					tengoMotor=false;
+				pPiece->siguienteLibre();
+			}
 
 			removed = true;
 			RemovePiece(pPiece);
@@ -3169,7 +3345,18 @@ void Project::HandleCommand(LC_COMMANDS id, unsigned long nParam)
 		case LC_FILE_NEW:
 		{
 			if (!SaveModified())
+			{
+				/*******FRAN*******/
+				selectCon1=NULL;
+				selectCon2=NULL;
+				delAssembling1=NULL;
+				piezaDeslizar=NULL;
+				deslizarConector=NULL;
+				nSelect=0;
+				recalcularConexiones=false;
+				/*******FRAN*******/
 				return;  // leave the original one
+			}
 
 			OnNewDocument();
 			UpdateAllViews ();
@@ -3200,6 +3387,25 @@ void Project::HandleCommand(LC_COMMANDS id, unsigned long nParam)
 					return;  // open failed
 				}
 				SetPathName(filename, true);
+
+				/********************FRAN******************/
+				if(ensamblar)
+				{
+					//Si la opción de assembling está habilitada...
+
+					Piece *piezas;
+					piezas=m_pPieces;
+					while(piezas!=NULL)
+					{
+						//Cargamos toda la información de los ficheros LCI de todas las piezas que sea posible
+						crearPieza(piezas);
+						piezas=piezas->m_pNext;
+					}
+
+					propagarAssemblingTotal();
+					SystemUpdateEnableAssembling(true);
+				}
+				/********************FRAN******************/
 			}
 		} break;
 		
@@ -4210,6 +4416,29 @@ void Project::HandleCommand(LC_COMMANDS id, unsigned long nParam)
 				}
 			}
 
+			/****************FRAN***************SOLUCIÓN PARCIAL*/
+			//PRUEVA-->Borramos todas las conexiones y luego miramos si se pueden hacer
+			//Después de Undo o Redo...
+			//borrarAssemblings(); //Ponemos todos los conectores libres y...
+			if(ensamblar)
+			{
+				Piece *pPieza;
+
+				selectCon1=NULL;
+				selectCon2=NULL;
+				nSelect=0;
+				delAssembling1=NULL;
+				piezaDeslizar=NULL;
+				deslizarConector=NULL;
+				pPieza=m_pPieces;
+				while(pPieza!=NULL)
+				{
+					crearPieza(pPieza); //Volvemos a cargar la información porque el la elimina toda, ya que guarda toda la información!!!
+					pPieza=pPieza->m_pNext;
+				}
+				propagarAssemblingTotal();//...luego miramos cuales pueden conectar
+			}
+
 			SystemUpdateUndoRedo(m_pUndoList->pNext ? m_pUndoList->strText : NULL, m_pRedoList ? m_pRedoList->strText : NULL);
 		} break;
 
@@ -4323,6 +4552,10 @@ void Project::HandleCommand(LC_COMMANDS id, unsigned long nParam)
 				pPiece->SetFrameShow(m_nCurFrame);
 				pPiece->SetStepShow(m_nCurStep);
 				AddPiece(pPiece);
+				/******************FRAN********************/
+				if(ensamblar) crearPieza(pPiece); //Cargamos la información referente a los conectores de la pieza a pegar!!!
+				/******************FRAN********************/
+
 				pPiece->Select(true, false, false);
 
 				j = (int)pPiece->GetGroup();
@@ -4556,12 +4789,351 @@ void Project::HandleCommand(LC_COMMANDS id, unsigned long nParam)
 			free(opts);
 		} break;
 
+		/*******************FRAN******************/
+
+		case LC_FRAN_ASSEMBLING_CONECTORS:
+			{
+				//CUTRE
+				Piece *pPieza;
+				bool trobat=false;
+
+				pPieza=m_pPieces;
+				while(pPieza!=NULL && !trobat)
+				{
+					if(pPieza->IsSelected()) trobat=true;
+					else pPieza=pPieza->m_pNext;
+				}
+				//si hemos encontrado la pieza seleccionada realizamos el assembling.
+				if(trobat) confirmarConectores(pPieza);
+
+				//Actualizamos la visualización para que se noten los canvios.
+				UpdateSelection();
+				UpdateAllViews();
+			}
+			break;
+
+		case LC_FRAN_SLIDE:
+			{
+				if(!SystemFranButtonChecked(ID_FRAN_SLIDE))
+				{
+					deslizar=true;
+					if(desconectar) desconectar=false;
+					if(desconectarPieza) desconectarPieza=false;
+				}
+				SystemCheckButton(ID_FRAN_SLIDE,deslizar);
+				SystemCheckButton(ID_FRAN_DISCONECT_ASSEMBLING,desconectar);
+				SystemCheckButton(ID_FRAN_DISCONECT_ALL,desconectarPieza);
+			}
+			break;
+
+		case LC_FRAN_DISABLE_ASSEMBLING:
+			{
+				if(!SystemFranButtonChecked(ID_FRAN_DISCONECT_ASSEMBLING))
+				{
+					desconectar=true;
+					desconectarPieza=false;
+					deslizar=false;
+
+				}
+				SystemCheckButton(ID_FRAN_DISCONECT_ASSEMBLING,desconectar);
+				SystemCheckButton(ID_FRAN_DISCONECT_ALL,desconectarPieza);
+				SystemCheckButton(ID_FRAN_SLIDE,deslizar);
+			}
+			break;
+
+		case LC_FRAN_DISABLE_ALL:
+			{
+				if(desconectarPieza) desconectarPieza=false;
+				else
+				{
+					desconectarPieza=true;
+					if(desconectar) desconectar=false;
+					if(deslizar) deslizar=false;
+				}
+				SystemCheckButton(ID_FRAN_DISCONECT_ALL,desconectarPieza);
+				SystemCheckButton(ID_FRAN_DISCONECT_ASSEMBLING,desconectar);
+				SystemCheckButton(ID_FRAN_SLIDE,deslizar);
+			}
+			break;
+
+		case LC_FRAN_ENABLE_ASSEMBLING:
+			{
+				if(ensamblar) ensamblar=false;
+				else ensamblar=true;
+
+				if(!ensamblar)
+				{
+					selectCon1=NULL;
+					selectCon2=NULL;
+					delAssembling1=NULL;
+					piezaDeslizar=NULL;
+					deslizarConector=NULL;
+					//Para todas las piezas que sus conectores estuvieran conectadas las desconectamos
+					resetearAssembling();
+				}
+				else propagarAssemblingTotal();
+
+				SystemUpdateEnableAssembling(ensamblar);
+
+			} break;
+
+		/*case LC_FRAN_EDIT_SELECT_CONECTOR:
+			{
+				Piece *pPieza=NULL;
+				Conector *pCon=NULL;
+				int libres=0;
+				bool trobat=false;
+
+				vaciarLista(); //Vaciamos la lista de piezas
+
+				pPieza=m_pPieces;
+				while(pPieza!=NULL)
+				{
+					if(pPieza->IsSelected()) libres=libres+introducirPiezaLista(pPieza);
+					pPieza=pPieza->m_pNext;
+				}
+
+				for(pPieza=m_pPieces;pPieza;pPieza=pPieza->m_pNext)
+				{
+					if(pPieza->IsSelected())
+					{
+						//nConLibres=nConLibres+pPieza->nConectoresLibres();
+						//trobat=true;
+						nConLibres=nConLibres+introducirPiezaLista(pPieza);
+					}
+
+				}
+
+				piezasNoVisitadas();
+
+				if(piezas.Vacia()) AfxMessageBox("You Must to select a piece.");
+				else
+				{
+					//Hay seleccionada almenos una pieza...
+					if (libres==0)
+					{
+						AfxMessageBox("There's no free connectors.");
+						//Por si no quedan conectores libres!!!!!
+						break;
+					}
+					else
+					{
+						//Para cada pieza que se encuentre en la lista de piezas sea por estar seleccionada o conectada.
+						LC_FRAN_SEL_DATA* datos = (LC_FRAN_SEL_DATA*)malloc((libres+1)*sizeof(LC_FRAN_SEL_DATA));
+						crearDatosConectores(datos);
+						pCon=conectorSeleccionado(datos);
+						if(pCon!=NULL)
+						{
+							seleccionarConectores(pCon);
+							(pCon->obtenerMadre())->Select(true,true,false);
+						}
+						free(datos);
+						//No estoy seguro!!!!!!
+						UpdateSelection();
+						UpdateAllViews();
+					}
+				}
+			} break;*/
+
+		case LC_FRAN_SELECT_LCI_DIRECTORY:
+			{
+				//char *lci=NULL;
+				char lci[LC_MAXPATH];
+				int longitudLCI;
+
+				if(!SystemDoDialog(LC_DLG_FRAN_SELECT_LCI_DIRECTORY,&lci)) break;
+
+				//Le quitamos el "lci\" del final, para que no se encuentre repetido.
+				longitudLCI=strlen(lci);
+				lci[longitudLCI-1]=NULL;
+				lci[longitudLCI-2]=NULL;
+				lci[longitudLCI-3]=NULL;
+				lci[longitudLCI-4]=NULL;
+
+				//En opts tengo la string que me dice el path del directorio LCI.
+				strcpy(directorioLCI,lci);
+			} break;
+
+		/*******************FRAN******************/
+		/*******************XUS*******************/
+		case LC_XUS_PLAY_MOTOR:
+			{
+				Conector* pMotor;
+
+				pMotor=buscarMotor();
+				if(pMotor!=NULL)
+				{
+					(tengoMotor)?tengoMotor=false:tengoMotor=true;
+					EjecutarMotor();
+				}
+
+			}break;
+
+		case LC_XUS_PRUEVA:
+			{
+			bool trobat=false;
+			float r[4];
+
+			Conector *spur1,*spur2,*axle,*axlehole;
+			sirMat4d mat1,mat2;
+			sirVector4d normal(0,0,1,0),n1,n2;
+			sirVector3d norma1,norma2;
+
+			r[0]=0;
+			r[1]=0;
+			r[2]=1;
+			r[3]=180;
+
+
+			Piece* pPiece1 = new Piece(infospur);
+
+			/*******************FRAN******************/
+			crearPieza(pPiece1);
+			/*******************FRAN******************/
+
+			pPiece1->Initialize(0,0,0,m_nCurStep,m_nCurFrame,m_nCurColor);
+
+			SelectAndFocusNone(false);
+			pPiece1->CreateName(m_pPieces);
+			AddPiece(pPiece1);
+			pPiece1->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, true, true);
+			pPiece1->Select (true, true, false);
+			messenger->Dispatch (LC_MSG_FOCUS_CHANGED, pPiece1);
+			UpdateSelection();
+			SystemPieceComboAdd(m_pCurPiece->m_strDescription);
+
+/*			if (m_nSnap & LC_DRAW_MOVE)
+				SetAction(LC_ACTION_MOVE);
+
+			UpdateAllViews();
+			SetModifiedFlag(true);
+
+//			pPiece1->actualizar(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+*/
+			pPiece1->primeroLibre();
+			while(!trobat)
+			{
+				spur1=pPiece1->obtenerActualLibre();
+				if(strcmp(spur1->obtenerNombre(),"Spur")==0)
+				{
+					trobat=true;
+				}
+				pPiece1->siguienteLibre();
+			}
+
+			trobat=false;
+
+			Piece* pPiece2 = new Piece(infospur);
+
+			/*******************FRAN******************/
+			crearPieza(pPiece2);
+			/*******************FRAN******************/
+
+			pPiece2->Initialize((float)0.9,0,0,r,m_nCurStep,m_nCurFrame,m_nCurColor);
+
+
+			SelectAndFocusNone(false);
+			pPiece2->CreateName(m_pPieces);
+			AddPiece(pPiece2);
+			pPiece2->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, true, true);
+			pPiece2->Select (true, true, false);
+			messenger->Dispatch (LC_MSG_FOCUS_CHANGED, pPiece2);
+			UpdateSelection();
+			SystemPieceComboAdd(m_pCurPiece->m_strDescription);
+
+
+			pPiece2->primeroLibre();
+			while(!trobat)
+			{
+				spur2=pPiece2->obtenerActualLibre();
+				if(strcmp(spur2->obtenerNombre(),"Spur")==0)
+				{
+					trobat=true;
+				}
+				pPiece2->siguienteLibre();
+			}
+			trobat=false;
+
+			spur1->introducirConector(spur2);
+			spur2->introducirConector(spur1);
+
+			pPiece1->introducirConectorOcupado(spur1);
+			pPiece2->introducirConectorOcupado(spur2);
+//			pPiece2->Imprimirrotacion();
+
+
+			Piece* pPiece3 = new Piece(infoaxle);
+
+			/*******************FRAN******************/
+			crearPieza(pPiece3);
+			/*******************FRAN******************/
+
+			r[3]=90;
+
+			pPiece3->Initialize(0,0,0,r,m_nCurStep,m_nCurFrame,m_nCurColor);
+
+			SelectAndFocusNone(false);
+			pPiece3->CreateName(m_pPieces);
+			AddPiece(pPiece3);
+			pPiece3->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, true, true);
+			pPiece3->Select (true, true, false);
+			messenger->Dispatch (LC_MSG_FOCUS_CHANGED, pPiece3);
+			UpdateSelection();
+			SystemPieceComboAdd(m_pCurPiece->m_strDescription);
+
+
+			pPiece1->primeroLibre();
+			while(!trobat)
+			{
+				axlehole=pPiece1->obtenerActualLibre();
+				if(strcmp(axlehole->obtenerNombre(),"axleHole")==0)
+				{
+					trobat=true;
+				}
+				pPiece1->siguienteLibre();
+			}
+			trobat=false;
+
+
+			pPiece3->primeroLibre();
+			while(!trobat)
+			{
+				axle=pPiece3->obtenerActualLibre();
+				if(strcmp(axle->obtenerNombre(),"axle")==0)
+				{
+					trobat=true;
+				}
+				pPiece3->siguienteLibre();
+			}
+			trobat=false;
+
+			axlehole->introducirConector(axle);
+			axle->introducirConector(axlehole);
+
+			pPiece1->introducirConectorOcupado(axlehole);
+			pPiece3->introducirConectorOcupado(axle);
+
+
+			if (m_nSnap & LC_DRAW_MOVE)
+				SetAction(LC_ACTION_MOVE);
+
+			UpdateAllViews();
+			SetModifiedFlag(true);
+
+
+
+			}
+			break;
+
 		case LC_PIECE_INSERT:
 		{
 			if (m_pCurPiece == NULL)
 				break;
 			Piece* pLast = NULL;
 			Piece* pPiece = new Piece(m_pCurPiece);
+			/*******************FRAN******************/
+			if(ensamblar) crearPieza(pPiece);
+			/*******************FRAN******************/
 
 			for (pLast = m_pPieces; pLast; pLast = pLast->m_pNext)
 				if ((pLast->IsFocused()) || (pLast->m_pNext == NULL))
@@ -6274,12 +6846,68 @@ void Project::MoveSelectedObjects(float x, float y, float z)
 	    pLight->UpdatePosition (m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation);
 	  }
 
+	  //piezasNoVisitadas();
+	  //conectoresNoVisitados();
+	  /******FRAN**********/
+	  Piece *pPieza;
+	  sirVector3d trans;
+	  /******FRAN**********/
+
 	for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
+	{
 		if (pPiece->IsSelected())
 		{
-			pPiece->Move(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys, x, y, z);
-			pPiece->UpdatePosition(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation);
+			//pPiece->Move(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys, x, y, z);
+			//pPiece->UpdatePosition(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation);
+
+			/******FRAN**********/
+			trans[0]=x;
+			trans[1]=y;
+			trans[2]=z;
+			if(ensamblar)
+			{
+
+				//pPiece->siEsPrimeraEnMover();
+				//pPiece->mover(trans,m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+				pPiece->comunicarTraslacion(trans);
+				piezasNoVisitadas(); //pPiece->piezasNoVisitadas();
+				conectoresNoVisitados(); //Hay que hacerlo porque los CH quedan algunos como visitados.
+				/*************/
+				//En los assemblings solo se modificará la posición/rotación de las piezas conectadas
+				//a la que se va a ensamblar.
+				//En el caso de la tralsación pueden darse colisiones y por lo tanto se pueden trasladar
+				//piezas que no están conectadas a la que originalmente se trasladó.
+
+				transformar(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys); //pPiece->transformar(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+				piezasNoVisitadas(); //pPiece->piezasNoVisitadas();
+				/*************/
+				pPieza=pPiece;
+			}
+			else
+			{
+				pPiece->Move(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys, x, y, z);
+				pPiece->UpdatePosition(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation);
+			}
+			/******FRAN**********/
+
 		}
+	}
+
+	/******FRAN**********/
+	if(ensamblar)
+	{
+		pPieza=NULL;
+
+		//Si después de trasladar la pieza, sus conectores informa de que hay que recalcular conexiones...
+		if(recalcularConexiones)
+		{
+			//Eliminamos todas las conexiones de esta pieza o TADAS LAS PIEZAS!!!!!!?????????????
+			resetearAssembling();
+			propagarAssemblingTotal();
+			recalcularConexiones=false;
+		}
+	}
+	/******FRAN**********/
 
 	for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
 		if (pPiece->IsSelected())
@@ -6290,6 +6918,13 @@ void Project::MoveSelectedObjects(float x, float y, float z)
 
 void Project::RotateSelectedObjects(float x, float y, float z)
 {
+	if(x>0) {x=5.0f;}
+	if(y>0) {y=5.0f;}
+	if(z>0) {z=5.0f;}
+	if(x<0) {x=-5.0f;}
+	if(y<0) {y=-5.0f;}
+	if(z<0) {z=-5.0f;}
+
   if (m_nSnap & LC_DRAW_LOCK_X)
     x = 0;
   if (m_nSnap & LC_DRAW_LOCK_Y)
@@ -6305,34 +6940,59 @@ void Project::RotateSelectedObjects(float x, float y, float z)
   int nSel = 0;
   Piece *pPiece, *pFocus = NULL;
 
-  for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
-    if (pPiece->IsSelected())
-    {
-      if (pPiece->IsFocused ())
-        pFocus = pPiece;
-      /*
-        pPiece->GetPosition (pos);
-        if (pos[0] < bs[0]) bs[0] = pos[0];
-        if (pos[1] < bs[1]) bs[1] = pos[1];
-        if (pos[2] < bs[2]) bs[2] = pos[2];
-        if (pos[0] > bs[3]) bs[3] = pos[0];
-        if (pos[1] > bs[4]) bs[4] = pos[1];
-        if (pos[2] > bs[5]) bs[5] = pos[2];
-      */
-      pPiece->CompareBoundingBox (bs);
-      nSel++;
-    }
+  /*********FRAN*********/
+  Piece *pPieza=NULL;
+  sirMat4d rotacion,matCentroPos,matCentroNeg;
+  Matrix matriz;
+  float posicion[3],r[4];
+  bool trobat=false;
 
-  if (pFocus != NULL)
+  //SOLUCIÓN CUTRE A LO DE LA FÓRMULA DE RODRIGUES!!!!!!!!!!!
+  for(pPiece=m_pPieces; pPiece; pPiece=pPiece->m_pNext)
   {
-    pFocus->GetPosition (pos);
-    bs[0] = bs[3] = pos[0];
-    bs[1] = bs[4] = pos[1];
-    bs[2] = bs[5] = pos[2];
+	  //pPiece->GetPosition(p);
+	  pPiece->GetRotation(r);
+
+	  //for(i=0;i<3;i++)
+	  //{
+		  //if(iguales(p[i],0)) p[i]=0;
+		  //if(iguales(r[i],0)) r[i]=0;
+	  //}
+
+	  //pPiece->introducirPosicion(p);
+	  if(iguales(r[3],0)) r[3]=0;
+	  pPiece->introducirRotacion(r);
   }
 
   for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
-  {
+	  if (pPiece->IsSelected())
+	  {
+
+		  if (pPiece->IsFocused ())
+			pFocus = pPiece;
+		/*
+			pPiece->GetPosition (pos);
+			if (pos[0] < bs[0]) bs[0] = pos[0];
+			if (pos[1] < bs[1]) bs[1] = pos[1];
+			if (pos[2] < bs[2]) bs[2] = pos[2];
+			if (pos[0] > bs[3]) bs[3] = pos[0];
+			if (pos[1] > bs[4]) bs[4] = pos[1];
+			if (pos[2] > bs[5]) bs[5] = pos[2];
+		*/
+		  pPiece->CompareBoundingBox (bs);
+		  nSel++;
+	  }
+
+	  if (pFocus != NULL)
+	  {
+		  pFocus->GetPosition (pos);
+		  bs[0] = bs[3] = pos[0];
+		  bs[1] = bs[4] = pos[1];
+		  bs[2] = bs[5] = pos[2];
+	  }
+
+for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
+{
     if (!pPiece->IsSelected())
       continue;
 
@@ -6384,7 +7044,100 @@ void Project::RotateSelectedObjects(float x, float y, float z)
   for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
     if (pPiece->IsSelected())
       pPiece->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, false, true);
+
+	/********FRAN*******/
+	if(ensamblar)
+	{
+		pPieza=m_pPieces;
+		while(pPieza!=NULL && !trobat)
+		{
+			if(pPieza->IsSelected()) trobat=true;
+			else pPieza=pPieza->m_pNext;
+		}
+
+		if(pPieza!=NULL)
+		{
+			if(x!=0) {matriz.Rotate(x,1,0,0);}
+			if(y!=0) {matriz.Rotate(y,0,1,0);}
+			if(z!=0) {matriz.Rotate(z,0,0,1);}
+			rotacion.introducir(matriz.m);
+
+			pPieza->GetPosition(posicion);
+
+			matCentroPos[0][3]=posicion[0];
+			matCentroPos[1][3]=posicion[1];
+			matCentroPos[2][3]=posicion[2];
+
+			matCentroNeg[0][3]=-posicion[0];
+			matCentroNeg[1][3]=-posicion[1];
+			matCentroNeg[2][3]=-posicion[2];
+
+			rotacion=rotacion*matCentroNeg;
+			rotacion=matCentroPos*rotacion;
+
+			//Como a la pieza que rota el propio leoCAD no le aplicamos la rotación
+			//a las demá ya se lo haremos bién respecto a la pieza a la que rotamos.
+			//pPieza->rotar(rotacion,m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+			//pPieza->piezasNoVisitadas(); //Ponemos el flag visitada a flaso de las piezas que se les ha modificado, en este caso, las rotadas.
+			//piezasNoVisitadas();
+
+			RotacionManual=true;
+			pPieza->comunicarRotacion(rotacion,false);
+			pPieza->piezasNoVisitadas();
+			pPieza->transformar(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+			pPieza->piezasNoVisitadas(); //Ponemos el flag visitada a flaso de las piezas que se les ha modificado, en este caso, las rotadas.*/
+			//piezasNoVisitadas();
+		}
+		pPieza=NULL;
+	}
+
+	if(ensamblar)
+	{
+		pPieza=NULL;
+
+		//Si después de trasladar la pieza, sus conectores informa de que hay que recalcular conexiones...
+		if(recalcularConexiones)
+		{
+			//Eliminamos todas las conexiones de esta pieza o TADAS LAS PIEZAS!!!!!!?????????????
+			resetearAssembling();
+			propagarAssemblingTotal();
+			recalcularConexiones=false;
+		}
+	}
+	/******FRAN**********/
 }
+
+
+/*********************FRAN*******************
+
+void Project::calcularConexionesConectadas(Piece *pPieza)
+{
+	Piece *conectada;
+	Conector *conectado;
+
+
+	if(!pPieza->obtenerEstadoVisita())
+	{
+		//No visitada.
+		pPieza->piezaVisitada();
+
+		if(!pPieza->IsSelected())
+		{
+			pPieza->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, false, true);
+
+			pPieza->primeroOcupado();
+			while(!pPieza->finOcupado())
+			{
+				conectado=pPieza->obtenerActualOcupado();
+				conectada=conectado->obtenerMadre();
+				calcularConexionesConectadas(conectada);
+				pPieza->siguienteOcupado();
+			}
+		}
+	}
+}
+
+*********************FRAN*******************/
 
 bool Project::OnKeyDown(char nKey, bool bControl, bool bShift)
 {
@@ -6765,7 +7518,19 @@ bool Project::OnKeyDown(char nKey, bool bControl, bool bShift)
         }
       }
 
-			if (bShift)
+			/*****************FRAN****************/
+
+			if(deslizar && !bShift) Project::deteccionColisionesDeslizar(axis);
+			else if(bShift) RotateSelectedObjects(axis[0],axis[1],axis[2]);
+			else MoveSelectedObjects(axis[0], axis[1], axis[2]);
+
+			UpdateAllViews();
+			SetModifiedFlag(true);
+			CheckPoint((bShift) ? "Rotating" : "Moving");
+			SystemUpdateFocus(NULL, 0);
+			ret = true;
+
+			/*if (bShift)
 				RotateSelectedObjects(axis[0], axis[1], axis[2]);
 			else
 				MoveSelectedObjects(axis[0], axis[1], axis[2]);
@@ -6773,7 +7538,8 @@ bool Project::OnKeyDown(char nKey, bool bControl, bool bShift)
 			SetModifiedFlag(true);
 			CheckPoint((bShift) ? "Rotating" : "Moving");
 			SystemUpdateFocus(NULL, 0);
-			ret = true;
+			ret = true;*/
+
 		} break;
 	}
 
@@ -6782,217 +7548,426 @@ bool Project::OnKeyDown(char nKey, bool bControl, bool bShift)
 
 void Project::OnLeftButtonDown(int x, int y, bool bControl, bool bShift)
 {
-  GLdouble modelMatrix[16], projMatrix[16], point[3];
-  GLint viewport[4];
 
-  if (IsDrawing())
-    return;
+	GLdouble modelMatrix[16], projMatrix[16], point[3];
+	GLint viewport[4];
 
-  if (m_nTracking != LC_TRACK_NONE)
+
+	if (IsDrawing())
+		return;
+
+	if (m_nTracking != LC_TRACK_NONE)
     if (StopTracking(false))
       return;
 
-  if (SetActiveViewport(x, y))
-    return;
+	if (SetActiveViewport(x, y))
+		return;
 
-  m_bTrackCancel = false;
-  m_nDownX = x;
-  m_nDownY = y;
+	m_bTrackCancel = false;
+	m_nDownX = x;
+	m_nDownY = y;
 
-  LoadViewportProjection();
-  glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
-  glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
-  glGetIntegerv(GL_VIEWPORT, viewport);
+	LoadViewportProjection();
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+	glGetIntegerv(GL_VIEWPORT, viewport);
 
-  gluUnProject(x, y, 0.9, modelMatrix, projMatrix, viewport, &point[0], &point[1], &point[2]);
-  m_fTrack[0] = (float)point[0]; m_fTrack[1] = (float)point[1]; m_fTrack[2] = (float)point[2];
+	gluUnProject(x, y, 0.9, modelMatrix, projMatrix, viewport, &point[0], &point[1], &point[2]);
+	m_fTrack[0] = (float)point[0]; m_fTrack[1] = (float)point[1]; m_fTrack[2] = (float)point[2];
 
-  switch (m_nCurAction)
-  {
-    case LC_ACTION_SELECT:
-    case LC_ACTION_ERASER:
-    case LC_ACTION_PAINT:
-    {
-      LC_CLICKLINE ClickLine;
-      FindObjectFromPoint (x, y, &ClickLine);
-
-      if (m_nCurAction == LC_ACTION_SELECT) 
-      {
-	if (ClickLine.pClosest != NULL)
-        {
-	  switch (ClickLine.pClosest->GetType ())
-	  {
-	    case LC_OBJECT_PIECE:
-	    {
-	      Piece* pPiece = (Piece*)ClickLine.pClosest;
-	      Group* pGroup = pPiece->GetTopGroup();
-              bool bFocus = pPiece->IsFocused ();
-
-              SelectAndFocusNone (bControl);
-
-              // if a piece has focus deselect it, otherwise set the focus
-              pPiece->Select (!bFocus, !bFocus, false);
-
-	      if (pGroup != NULL)
-		for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
-		  if (pPiece->GetTopGroup() == pGroup)
-		    pPiece->Select (!bFocus, false, false);
-	    } break;
-
-	    case LC_OBJECT_CAMERA:
-	    case LC_OBJECT_CAMERA_TARGET:
-	    case LC_OBJECT_LIGHT:
-	    case LC_OBJECT_LIGHT_TARGET:
-	    {
-              SelectAndFocusNone (bControl);
-	      ClickLine.pClosest->Select (true, true, bControl);
-	    } break;
-	  }
-        }
-        else
-          SelectAndFocusNone (bControl);
-
-	UpdateSelection();
-	UpdateAllViews();
-	if (ClickLine.pClosest)
-	  SystemUpdateFocus(ClickLine.pClosest, ClickLine.pClosest->GetType()|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
-	else
-	  SystemUpdateFocus(NULL, LC_UPDATE_OBJECT);
-      }
-
-      if ((m_nCurAction == LC_ACTION_ERASER) && (ClickLine.pClosest != NULL))
-      {
-	switch (ClickLine.pClosest->GetType ())
+	switch (m_nCurAction)
 	{
-	  case LC_OBJECT_PIECE:
-	  {
-	    Piece* pPiece = (Piece*)ClickLine.pClosest;
-	    RemovePiece(pPiece);
-	    delete pPiece;
-//						CalculateStep();
-	    RemoveEmptyGroups();
-	  } break;
-
-	  case LC_OBJECT_CAMERA:
-	  case LC_OBJECT_CAMERA_TARGET:
-	  {
-	    Camera* pCamera;
-	    if (ClickLine.pClosest->GetType () == LC_OBJECT_CAMERA)
-	      pCamera = (Camera*)ClickLine.pClosest;
-	    else
-	      pCamera = ((CameraTarget*)ClickLine.pClosest)->GetParent();
-	    bool bCanDelete = pCamera->IsUser();
-
-	    for (int i = 0; i < 4; i++)
-	      if (pCamera == m_pViewCameras[i])
-		bCanDelete = false;
-
-	    if (bCanDelete)
-	    {
-	      Camera* pPrev;
-	      for (pPrev = m_pCameras; pPrev; pPrev = pPrev->m_pNext)
-		if (pPrev->m_pNext == pCamera)
+		/****************FRAN***************/
+		case LC_ACTION_FRAN_SLIDE:
 		{
-		  pPrev->m_pNext = pCamera->m_pNext;
-		  delete pCamera;
-		  SystemUpdateCameraMenu(m_pCameras);
-		  SystemUpdateCurrentCamera(NULL, m_pViewCameras[m_nActiveViewport], m_pCameras);
-		  break;
+			Piece *pPieza=NULL;
+			bool trobat=false;
+
+			//Buscamos la pieza seleccionada con anterioridad.
+			pPieza=m_pPieces;
+			while(pPieza!=NULL && !trobat)
+			{
+				if(pPieza->IsSelected()) trobat=true;
+				else pPieza=pPieza->m_pNext;
+			}
+
+			if(trobat)
+			{
+				//Si la pieza tiene algún conector conectado (OCUPADO) que pueda deslizar sobre otro,
+				//entonces si que llevamos a cabo el proceso de deslizamiento.
+				//No tiene sentido deslizar conectores libres==trasladar.
+				if(piezaDeslizar!=NULL/*pPieza->puedeDeslizar()*/)
+				{
+					piezaDeslizar=pPieza;
+					StartTracking(LC_TRACK_START_LEFT);
+					m_fTrack[0] = m_fTrack[1] = m_fTrack[2] = 0.0f;
+				}
+				else piezaDeslizar=NULL;
+			}
+			else piezaDeslizar=NULL;
+
+			pPieza=NULL;
+
+			//Se trata de deslizar en el eje Z del conector.
+			//Vigilar Z-Axle y Z-AH,Z-CH que son diferentes.
+
+			//Después de realizar el deslizamiento hay que poner deslizarConector=NULL!!!
 		}
-	    }
-	  } break;
+		break;
 
-	  case LC_OBJECT_LIGHT:
-	  case LC_OBJECT_LIGHT_TARGET:
-	  { 
-/*						pos = m_Lights.Find(pObject->m_pParent);
-						m_Lights.RemoveAt(pos);
-						delete pObject->m_pParent;
-*/	  } break;
-	}
+		case LC_ACTION_FRAN_DISABLE_ASSEMBLING:
+		{
+			Conector *conector;//,*conectado;
+			//Piece *madreConectado;
+			LC_CLICKLINE linea;
+			//bool focus;
 
-	UpdateSelection();
-	UpdateAllViews();
-	SetModifiedFlag(true);
-	CheckPoint("Deleting");
-//				AfxGetMainWnd()->PostMessage(WM_LC_UPDATE_INFO, NULL, OT_PIECE);
-      }
+			/*******************************/
+			deslizarConector=NULL;
+			piezaDeslizar=NULL;
+			/*******************************/
 
-      if ((m_nCurAction == LC_ACTION_PAINT) && (ClickLine.pClosest != NULL) && 
-	  (ClickLine.pClosest->GetType() == LC_OBJECT_PIECE))
-      {
-	Piece* pPiece = (Piece*)ClickLine.pClosest;
+			FindObjectFromPoint (x, y, &linea);
 
-	if (pPiece->GetColor() != m_nCurColor)
+
+				if(linea.pClosest != NULL)
+				{
+					if(linea.pClosest->GetType()==LC_OBJECT_PIECE)
+					{
+						Piece *pPieza = (Piece*)linea.pClosest;
+						conector=pPieza->conectorOcupadoCercano(linea);
+
+						if(conector!=NULL) //Si existe algún conector ocupado en la pieza...
+						{
+							delAssembling1=conector;
+							SelectAndFocusNone (false);
+							pPieza->Select(true,true,false);
+
+							//Entonces desacemos su assembling!!!!
+							//En el caso del AXLE???-->Borramos todos los assemblings o solo el selecionado-->2 CLICKS!!!!
+							//DE MOMENTO SE BORRAN TODOS LOS ASSEMBLINGS!!!
+
+
+							//Deconectamos todos los conectores que estaban conectados al conector seleccionado...
+							//...y a la vez a los conectados los desconectamos del seleccionado por el usuario.
+							conector->desconectar(); //Desconectamos todos los conectores conectados al conector seleccionados por el usuario
+						}
+						else AfxMessageBox("All connectors are free.");
+					}
+				}
+
+				//SystemCheckButton(ID_FRAN_DISCONECT_ASSEMBLING,FALSE);
+				//desconectar=false;
+				//SetAction(LC_ACTION_SELECT);
+
+				UpdateSelection();
+				UpdateAllViews();
+		}
+		break;
+
+		case LC_ACTION_FRAN_DISABLE_ALL:
+			{
+				LC_CLICKLINE linea;
+
+				/*******************************/
+				deslizarConector=NULL;
+				piezaDeslizar=NULL;
+				/*******************************/
+
+				FindObjectFromPoint (x, y, &linea);
+
+				if(linea.pClosest != NULL)
+				{
+					if(linea.pClosest->GetType()==LC_OBJECT_PIECE)
+					{
+						Piece *pPieza = (Piece*)linea.pClosest;
+
+						if(!pPieza->vaciaOcupado())
+						{
+							//Borramos todas las conexiones de la pieza y a las conectadas las del conector que estaba ensamblado a "pPieza"
+							pPieza->borrar(); //CUIDADO!!!
+							SelectAndFocusNone(false); //???
+							pPieza->Select(true,true,false);
+						}
+						else AfxMessageBox("All conectors are free.");
+					}
+				}
+
+				SystemCheckButton(ID_FRAN_DISCONECT_ALL,FALSE);
+				desconectarPieza=false;
+				SetAction(LC_ACTION_SELECT);
+
+				UpdateSelection();
+				UpdateAllViews();
+			}
+			break;
+
+		/****************FRAN***************/
+
+		case LC_ACTION_SELECT:
+		case LC_ACTION_ERASER:
+		case LC_ACTION_PAINT:
+		{
+			LC_CLICKLINE ClickLine;
+			FindObjectFromPoint (x, y, &ClickLine);
+
+			if (m_nCurAction == LC_ACTION_SELECT)
+			{
+
+				if (ClickLine.pClosest != NULL)
+				{
+					switch (ClickLine.pClosest->GetType ())
+					{
+					case LC_OBJECT_PIECE:
+						{
+							Piece* pPiece = (Piece*)ClickLine.pClosest;
+
+							Group* pGroup = pPiece->GetTopGroup();
+							bool bFocus = pPiece->IsFocused ();
+
+							SelectAndFocusNone (bControl);
+
+							// if a piece has focus deselect it, otherwise set the focus
+							pPiece->Select (!bFocus, !bFocus, false);
+
+							if (pGroup != NULL)
+								for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
+									if (pPiece->GetTopGroup() == pGroup)
+										pPiece->Select (!bFocus, false, false);
+
+
+
+							/***********FRAN***********/
+							Conector *cercano=NULL;
+
+							if(ensamblar)
+							{
+								cercano=pPiece->conectorCercano(ClickLine); //CERCANO es el conector con distancia mínima al punto seleccionado de la pieza por parte del usuario.
+
+								//Por si después deslizamos!!!
+								if(pPiece->puedeDeslizar())
+								{
+									piezaDeslizar=pPiece;
+									//Obtenemos el conector más cercano a donde se clicó y que pueda deslizar.
+									//Puede ser NULL!!!
+									//Seguro que deslizarConector!=NULL porque la pieza puede deslizar.
+									deslizarConector=piezaDeslizar->conectorCercanoDeslizar(ClickLine);
+								}
+								else
+								{
+									piezaDeslizar=NULL;
+									deslizarConector=NULL;
+								}
+
+								if(cercano!=NULL) seleccionarConectores(cercano);
+
+								/***PRUEVAS***/
+								delAssembling1=NULL;
+								/***PRUEVAS***/
+							}
+
+
+
+							/*Conector *aux;
+							Utilidades u;
+
+							AfxMessageBox("LIBRES");
+							pPiece->primeroLibre();
+							while(!pPiece->finLibre())
+							{
+								aux=pPiece->obtenerActualLibre();
+								u.imprimirEntero(aux->obtenerId());
+								pPiece->siguienteLibre();
+							}
+
+							AfxMessageBox("OCUPADOS");
+							pPiece->primeroOcupado();
+							while(!pPiece->finOcupado())
+							{
+								aux=pPiece->obtenerActualOcupado();
+								u.imprimirEntero(aux->obtenerId());
+								pPiece->siguienteOcupado();
+							}
+							************FRAN***********/
+
+						} break;
+
+					case LC_OBJECT_CAMERA:
+					case LC_OBJECT_CAMERA_TARGET:
+					case LC_OBJECT_LIGHT:
+					case LC_OBJECT_LIGHT_TARGET:
+						{
+							SelectAndFocusNone (bControl);
+							ClickLine.pClosest->Select (true, true, bControl);
+						} break;
+					}
+				}
+				else
+				{
+					SelectAndFocusNone (bControl);
+
+					/***********FRAN***********/
+
+					selectCon1=NULL;
+					selectCon2=NULL;
+					delAssembling1=NULL; //Creo que no hace falta
+					piezaDeslizar=NULL;
+					deslizarConector=NULL;
+					nSelect=0;
+					//CUANDO CLIQUE Y NO HAYA OBJETO DESELECCIONAR CONECTOR Y BORRARLOS DE LA LISTA selectCon
+
+					/***********FRAN***********/
+				}
+
+				UpdateSelection();
+				UpdateAllViews();
+				if (ClickLine.pClosest)
+					SystemUpdateFocus(ClickLine.pClosest, ClickLine.pClosest->GetType()|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
+				else
+					SystemUpdateFocus(NULL, LC_UPDATE_OBJECT);
+			}
+
+			if ((m_nCurAction == LC_ACTION_ERASER) && (ClickLine.pClosest != NULL))
+			{
+				switch (ClickLine.pClosest->GetType ())
+				{
+				case LC_OBJECT_PIECE:
+					{
+						Piece* pPiece = (Piece*)ClickLine.pClosest;
+						RemovePiece(pPiece);
+
+						delete pPiece;
+						//CalculateStep();
+						RemoveEmptyGroups();
+					} break;
+
+				case LC_OBJECT_CAMERA:
+				case LC_OBJECT_CAMERA_TARGET:
+					{
+						Camera* pCamera;
+						if (ClickLine.pClosest->GetType () == LC_OBJECT_CAMERA)
+							pCamera = (Camera*)ClickLine.pClosest;
+						else
+							pCamera = ((CameraTarget*)ClickLine.pClosest)->GetParent();
+						bool bCanDelete = pCamera->IsUser();
+
+						for (int i = 0; i < 4; i++)
+							if (pCamera == m_pViewCameras[i])
+								bCanDelete = false;
+
+							if (bCanDelete)
+							{
+								Camera* pPrev;
+								for (pPrev = m_pCameras; pPrev; pPrev = pPrev->m_pNext)
+									if (pPrev->m_pNext == pCamera)
+									{
+										pPrev->m_pNext = pCamera->m_pNext;
+										delete pCamera;
+										SystemUpdateCameraMenu(m_pCameras);
+										SystemUpdateCurrentCamera(NULL, m_pViewCameras[m_nActiveViewport], m_pCameras);
+										break;
+									}
+							}
+					} break;
+
+				case LC_OBJECT_LIGHT:
+				case LC_OBJECT_LIGHT_TARGET:
+					{
+					/*						pos = m_Lights.Find(pObject->m_pParent);
+					m_Lights.RemoveAt(pos);
+					delete pObject->m_pParent;
+						*/
+					} break;
+				}
+
+				UpdateSelection();
+				UpdateAllViews();
+				SetModifiedFlag(true);
+				CheckPoint("Deleting");
+				//				AfxGetMainWnd()->PostMessage(WM_LC_UPDATE_INFO, NULL, OT_PIECE);
+			}
+
+			if ((m_nCurAction == LC_ACTION_PAINT) && (ClickLine.pClosest != NULL) && (ClickLine.pClosest->GetType() == LC_OBJECT_PIECE))
+			{
+				Piece* pPiece = (Piece*)ClickLine.pClosest;
+
+				if (pPiece->GetColor() != m_nCurColor)
+				{
+					bool bTrans = pPiece->IsTransparent();
+					pPiece->SetColor(m_nCurColor);
+					if (bTrans != pPiece->IsTransparent())
+						pPiece->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, true, true);
+
+					SetModifiedFlag(true);
+					CheckPoint("Painting");
+					SystemUpdateFocus(NULL, 0);
+					UpdateAllViews();
+				}
+			}
+} break;
+
+case LC_ACTION_INSERT:
+case LC_ACTION_LIGHT:
 	{
-	  bool bTrans = pPiece->IsTransparent();
-	  pPiece->SetColor(m_nCurColor);
-	  if (bTrans != pPiece->IsTransparent())
-	    pPiece->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, true, true);
+		if (m_nCurAction == LC_ACTION_INSERT)
+		{
+			Piece* pPiece = new Piece(m_pCurPiece);
 
-	  SetModifiedFlag(true);
-	  CheckPoint("Painting");
-	  SystemUpdateFocus(NULL, 0);
-	  UpdateAllViews();
-	}
-      }
-    } break;
+			/*******************FRAN******************/
+			if(ensamblar) crearPieza(pPiece);
+			/*******************FRAN******************/
 
-    case LC_ACTION_INSERT:
-    case LC_ACTION_LIGHT:
-    {
-      if (m_nCurAction == LC_ACTION_INSERT)
-      {
-        Piece* pPiece = new Piece(m_pCurPiece);
-        SnapPoint (m_fTrack, NULL);
-        pPiece->Initialize(m_fTrack[0], m_fTrack[1], m_fTrack[2], m_nCurStep, m_nCurFrame, m_nCurColor);
 
-        SelectAndFocusNone(false);
-        pPiece->CreateName(m_pPieces);
-        AddPiece(pPiece);
-        pPiece->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, false, true);
-        pPiece->Select (true, true, false);
-        UpdateSelection();
-        SystemPieceComboAdd(m_pCurPiece->m_strDescription);
-        SystemUpdateFocus(pPiece, LC_PIECE|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
+			SnapPoint (m_fTrack, NULL);
+			pPiece->Initialize(m_fTrack[0], m_fTrack[1], m_fTrack[2], m_nCurStep, m_nCurFrame, m_nCurColor);
 
-        if (m_nSnap & LC_DRAW_MOVE)
-          SetAction(LC_ACTION_MOVE);
-      }
-      else if (m_nCurAction == LC_ACTION_LIGHT)
-      {
-        GLint max;
-        int count = 0;
-        Light *pLight;
-
-        glGetIntegerv (GL_MAX_LIGHTS, &max);
-        for (pLight = m_pLights; pLight; pLight = pLight->m_pNext)
-          count++;
-
-        if (count == max)
-          break;
-
-        SnapPoint (m_fTrack, NULL);
-        pLight = new Light (m_fTrack[0], m_fTrack[1], m_fTrack[2]);
-
-        SelectAndFocusNone (false);
-
-        //	pLight->CreateName (m_pPieces);
-        pLight->m_pNext = m_pLights;
-        m_pLights = pLight;
-        SystemUpdateFocus (pLight, LC_LIGHT|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
-        pLight->Select (true, true, false);
-        UpdateSelection ();
-      }
-
-//			AfxGetMainWnd()->PostMessage(WM_LC_UPDATE_INFO, (WPARAM)pNew, OT_PIECE);
+			SelectAndFocusNone(false);
+			pPiece->CreateName(m_pPieces);
+			AddPiece(pPiece);
+			pPiece->CalculateConnections(m_pConnections, m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, false, true);
+			pPiece->Select (true, true, false);
 			UpdateSelection();
-			UpdateAllViews();
-			SetModifiedFlag(true);
-			CheckPoint("Inserting");
-    } break;
+			SystemPieceComboAdd(m_pCurPiece->m_strDescription);
+			SystemUpdateFocus(pPiece, LC_PIECE|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
 
-    case LC_ACTION_SPOTLIGHT:
+			if (m_nSnap & LC_DRAW_MOVE)
+				SetAction(LC_ACTION_MOVE);
+		}
+		else if (m_nCurAction == LC_ACTION_LIGHT)
+		{
+			GLint max;
+			int count = 0;
+			Light *pLight;
+
+			glGetIntegerv (GL_MAX_LIGHTS, &max);
+			for (pLight = m_pLights; pLight; pLight = pLight->m_pNext)
+				count++;
+
+			if (count == max)
+				break;
+
+			SnapPoint (m_fTrack, NULL);
+			pLight = new Light (m_fTrack[0], m_fTrack[1], m_fTrack[2]);
+
+			SelectAndFocusNone (false);
+
+			//	pLight->CreateName (m_pPieces);
+			pLight->m_pNext = m_pLights;
+			m_pLights = pLight;
+			SystemUpdateFocus (pLight, LC_LIGHT|LC_UPDATE_OBJECT|LC_UPDATE_TYPE);
+			pLight->Select (true, true, false);
+			UpdateSelection ();
+		}
+		//			AfxGetMainWnd()->PostMessage(WM_LC_UPDATE_INFO, (WPARAM)pNew, OT_PIECE);
+
+		UpdateSelection();
+		UpdateAllViews();
+		SetModifiedFlag(true);
+		CheckPoint("Inserting");
+
+	} break;
+
+case LC_ACTION_SPOTLIGHT:
     {
       GLint max;
       int count = 0;
@@ -7136,6 +8111,10 @@ void Project::OnLeftButtonDoubleClick(int x, int y, bool bControl, bool bShift)
           pPiece->Select (true, true, false);
           Group* pGroup = pPiece->GetTopGroup();
 
+		  /************FRAN***********/
+		  if(ensamblar) confirmarConectores(pPiece);
+		  /************FRAN***********/
+
           if (pGroup != NULL)
             for (pPiece = m_pPieces; pPiece; pPiece = pPiece->m_pNext)
               if (pPiece->GetTopGroup() == pGroup)
@@ -7274,6 +8253,41 @@ void Project::OnMouseMove(int x, int y, bool bControl, bool bShift)
 
 	switch (m_nCurAction)
 	{
+		/****************************FRAN***************************/
+
+		case LC_ACTION_FRAN_SLIDE:
+		{
+			float mouse = 0.25f/(21-m_nMouse);
+			float delta[3];
+
+			delta[0]=(float)(x-m_nDownX);
+			delta[1]=(float)(y-m_nDownY);
+			delta[2]=0;
+
+			//Delta es la traslación.
+			//Actual+DELTA:
+			delta[0] = delta[0] * mouse + m_fTrack[0];
+			delta[1] = delta[1] * mouse + m_fTrack[1];
+			delta[2] = delta[2] * mouse + m_fTrack[2];
+
+			SnapPoint (delta, m_fTrack);
+
+			m_nDownX = x;
+			m_nDownY = y;
+
+			delta[0]=-delta[0];
+			delta[1]=-delta[1];
+			delta[2]=-delta[2];
+
+			deteccionColisionesDeslizar(delta);
+
+			SystemUpdateFocus(NULL, 0);
+			UpdateAllViews();
+		}
+		break;
+
+		/****************************FRAN***************************/
+
 		case LC_ACTION_INSERT:
 			// TODO: handle action_insert (draw preview)
 			break;
@@ -7621,3 +8635,781 @@ void Project::OnMouseMove(int x, int y, bool bControl, bool bShift)
                 */
 	}
 }
+
+
+/***************************FRAN****************************/
+
+void Project::canviarEstado(int accion)
+{
+	switch(accion)
+	{
+	case LC_FRAN_DISABLE_ASSEMBLING: desconectar=!desconectar;
+		break;
+	case LC_FRAN_DISABLE_ALL: desconectarPieza=!desconectarPieza;
+		break;
+	case LC_FRAN_SLIDE: deslizar=!deslizar;
+		break;
+	}
+}
+
+/***********************************************************/
+
+void Project::seleccionarConectores(Conector *pCon)
+{
+	//pCon es el conector que se ha clicado
+
+	Conector *primero,*segundo;
+
+	switch(nSelect)
+	{
+	case 0:selectCon1=pCon;
+		nSelect=1;
+		//Cambiar el color del conector seleccionado
+		break;
+	case 1:
+		//Cogemos el primer conector que se ha seleccionado
+		//Cambiar el color del conector seleccionado
+		//Si son de diferente piezas seguro que no seran el mismo conector
+		primero=selectCon1;
+		if(primero->obtenerMadre()!=pCon->obtenerMadre())
+		{
+			selectCon2=pCon;
+			nSelect=2;
+		}
+		else if(primero->obtenerId()!=pCon->obtenerId())
+		{
+			//Se selecciona otro conector de la primera pieza
+			//sinó no hay que hacer nada porque se selecciona el mismo conector de la misma pieza inicial
+			selectCon1=pCon;
+		}
+		break;
+	case 2:primero=selectCon1;
+		segundo=selectCon2;
+		if(pCon->obtenerMadre()==primero->obtenerMadre())
+		{
+			if(pCon->obtenerId()!=primero->obtenerId())
+			{
+				selectCon1=pCon;
+				//Canviar color del conector seleccionado
+			}
+
+		}
+		else if(pCon->obtenerMadre()==segundo->obtenerMadre())
+		{
+			if(pCon->obtenerId()!=segundo->obtenerId())
+			{
+				selectCon2=pCon;
+				//Canviar color del conector seleccionado
+			}
+
+		}
+		else
+		{
+			//volvemos a empezar!!!
+			selectCon1=pCon;
+			selectCon2=NULL;
+			nSelect=1;
+			//Quitar color a los conectores seleccionados hasta ahora
+			//Canviar color del conector seleccionado
+
+		}
+	}
+
+	//VIGILAR-->SELECCIONA UN CONECTOR Y DESPUÉS NADA!!!!-->HAY QUE DESELECCIONAR EL CONECTOR
+	//CUANDO CLIQUE Y NO HAYA OBJETO DESELECCIONAR CONECTOR Y BORRARLOS DE LA LISTA selectCon
+}
+
+/***********************************************************/
+
+void Project::confirmarConectores(Piece *pPieza)
+{
+	Conector *primero,*segundo;
+
+	if(nSelect==2)
+	{
+		primero=selectCon1;
+		segundo=selectCon2;
+		if(pPieza==primero->obtenerMadre())
+		{
+			//Si pueden conectar y no pertenecen a la misma pieza
+			//Esto se quitará cuando se pregunte si assemblingsinLazos(segundo);
+			if((adminis->ExisteConector(primero,segundo,'c'))/*(primero->puedeConectar(segundo))*/ && (!pPieza->assemblingConLazosCadenas(segundo))) /*(!pPieza->assemblingConCiclos(segundo))*/
+			{
+				//Conector estático-->Primero
+				//Conector dinámico-->Segundo
+				piezasNoVisitadas(); //El algoritmo de ciclos las pone como visitadas!!!
+				assembling(primero,segundo);
+				//Para el Undo y el Redo
+				CheckPoint("Assembling");
+
+			}
+			else
+			{
+				piezasNoVisitadas(); //El algoritmo de ciclos las pone como visitadas!!!
+				nSelect=nSelect-1; //AÑADIDO!!!
+				AfxMessageBox("The assembling isn't possible");
+			}
+
+		}
+		else if(pPieza==segundo->obtenerMadre())
+		{
+			if((adminis->ExisteConector(primero,segundo,'c'))/*(primero->puedeConectar(segundo))*/ && (!pPieza->assemblingConLazosCadenas(primero))) /*(!pPieza->assemblingConCiclos(primero))*/
+			{
+				//Conector estático-->Segundo
+				//Conector dinámico-->Primero
+				piezasNoVisitadas(); //El algoritmo de ciclos las pone como visitadas!!!
+				assembling(segundo,primero);
+				//Para el Undo y el Redo
+				CheckPoint("Assembling");
+			}
+			else
+			{
+				piezasNoVisitadas(); //El algoritmo de ciclos las pone como visitadas!!!
+				nSelect=nSelect-1; //AÑADIDO!!!
+				AfxMessageBox("The assembling isn't possible");
+			}
+		}
+		else
+		{
+			//No se puede hacer delete porque los conectores a los que apuntamos estan apuntados por otras estructuras...
+			//y no hace falta esborrarlos-->Esto solo es interfície-->Se necesitan para otras cosas!!!!!
+			selectCon1=NULL;
+			selectCon2=NULL;
+			nSelect=0; //AÑADIDO!!!
+			AfxMessageBox("VOLVEMOS AL PRINCIPIO!!!");
+		}
+		//nSelect=0;
+	}
+
+}
+
+/***********************************************************/
+
+void Project::crearPieza(Piece *pPiece)
+{
+	char cadena[300],cadena1[300],cadena2[300];
+	char pieza[20];
+	PieceInfo *pInfo;
+
+	pInfo=pPiece->GetPieceInfo();
+	AfxMessageBox(pInfo->m_strName);
+	strcpy(pieza,pInfo->m_strName);
+	strcat(pieza,".lci");
+	strcpy(cadena,directorioLCI); //strcpy(cadena,m_AppPath);
+	strcat(cadena,"lci");
+	strcpy(cadena2,cadena);
+	strcat(cadena,"\\");
+	strcat(cadena,pieza);
+	pieza_asembling=pPiece;
+	switch(pPiece->leerFicheroLCI(cadena))
+	{
+	case -1://Fichero no existe
+		strcpy(cadena1,"Error: File ");
+		strcat(cadena1,pieza);
+		strcat(cadena1," doesn't exist in folder ");
+		strcat(cadena1,cadena2);
+		AfxMessageBox(cadena1);
+		break;
+	case 1://Fichero con errores sintácticos
+		strcpy(cadena1,"Error: File ");
+		strcat(cadena1,pieza);
+		strcat(cadena1," has sintactics errors");
+		AfxMessageBox(cadena1);
+		break;
+	case 0://Todo correcto
+		break;
+	}
+}
+
+/***********************************************************/
+
+void Project::piezasNoVisitadas(void)
+{
+	//Función que pone como no visitadas todas las piezas del proyecto
+	//Hay que llamarla siempre después de haber llamado a la función recursiva de transladar/rotar
+	//HACER DIAGRAMA DE SEQUENCIA??????
+
+	//Suponemos que todas las piezas de la escena han sido movidas
+
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		//no se si es mejor no poner el if i aplicarselo a todas aunque no se hayan movido...pero si hay muchas!!!
+		if(pPieza->obtenerEstadoVisita()) pPieza->piezaNoVisitada();
+		pPieza=pPieza->m_pNext;
+	}
+
+}
+
+/***********************************************************/
+
+void Project::resetearAssembling(void)
+{
+	//DOCUMENTARLO CON DIAGRAMA DE SECUENCIA!!!
+
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		pPieza->resetearAssembling(); //Para cada pieza eliminamos los ensamblajes.
+		pPieza=pPieza->m_pNext;
+	}
+
+	//Ponemos como no visitadas a todas las piezas, para poder rotarlar,transladarlas...más tarde!!!
+	piezasNoVisitadas();
+}
+
+/***********************************************************/
+
+double Project::angulo(double opp,double adj)
+{
+	//Función que alculo el ángulo con la tangente opp/adj
+	//El valor que devulve se encuentra entre PI y -PI
+
+	double angulo;
+
+	//Obtenemos el ángulo básico
+	if(fabs(adj)<0.0001) angulo=M_PI/2; //M_PI-->En radianes
+	else angulo=fabs(atan(opp/adj));
+
+	//Miramos si estamos en el cuadrante 2 o 3
+	if(adj<0) angulo=M_PI-angulo; //(angulo > PI/2) o (angulo < -PI/2)
+
+	//Miramos si estamos en el cuadrante 3 0 4
+	if(opp<0) angulo=-angulo;
+
+	//Ángulo debe de estaren grados y no en radianes!!!
+	angulo=angulo*180/M_PI;
+	//angulo*=180/M_PI;
+	return angulo;
+}
+
+
+/***********************************************************/
+
+void Project::propagarAssemblingTotal(void)
+{
+	Piece *actual,*piezas;
+
+	/***************************FALLO*************************/
+	//Para cada pieza miramos si puede ensamblar con cualquier otra de la escena
+	actual=m_pPieces;
+	while(actual!=NULL)
+	{
+		piezas=actual->m_pNext;
+		while(piezas!=NULL)
+		{
+			actual->propagarAssembling(piezas,adminis);
+			piezas=piezas->m_pNext;
+		}
+		actual=actual->m_pNext;
+	}
+	//Entre Axle-Cylindrical Hole-->Raro solo en un caso!!!!
+	/***************************FALLO*************************/
+
+
+	//ACTUALIZAMOS EL ESTADO DE LOS CONECTORES DE LAS PIEZAS!!!!!!!!!
+	actual=m_pPieces;
+	while(actual!=NULL)
+	{
+		actual->actualizarConectoresLibres();
+		actual=actual->m_pNext;
+	}
+}
+
+/***********************************************************/
+
+void Project::propagarAssembling(Piece *pieza)
+{
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		//Si algún conector libre de la pieza dinámica coincide con algún otro
+		//conector de alguna otra pieza del modelo en construcción, entonces hay que poner tales
+		//conectores como ocupados.
+		//No hay que hacerlo con la propia pieza!!!
+		if(pPieza!=pieza)
+		{
+			pieza->propagarAssembling(pPieza,adminis);
+		}
+
+		pPieza=pPieza->m_pNext;
+	}
+}
+
+
+/***********************************************************/
+
+Lista<Piece*> Project::listaPiezasNoConectadas(Lista<Piece*> conectadas)
+{
+	Lista<Piece*> noConectadas;
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		if(!conectadas.Existe(pPieza)) noConectadas.Introducir(pPieza);
+		pPieza=pPieza->m_pNext;
+	}
+
+	return noConectadas;
+}
+
+/***********************************************************/
+
+void Project::propagarAssemblingParteDinamica(Piece *piezaDinamica)
+{
+	Lista<Piece*> dinamicas,estaticas;
+	Piece *actualD,*actualS;
+	Conector *dinamico;
+
+
+	//Las piezas conectadas al conector dinámico no se tendrán en cuenta.
+	if(piezaDinamica->existeOcupado(selectCon1)) dinamico=selectCon1;
+	else dinamico=selectCon2;
+
+	dinamicas=piezaDinamica->listaPiezasConectadas(dinamico);
+	piezaDinamica->piezasNoVisitadas(); //Ponemos el flag visitada a falso, ya que el método anterior lo modifica.
+
+	estaticas=listaPiezasNoConectadas(dinamicas);
+
+	dinamicas.Primero();
+	while(!dinamicas.Fin())
+	{
+		actualD=dinamicas.Actual();
+		estaticas.Primero();
+		while(!estaticas.Fin())
+		{
+			actualS=estaticas.Actual();
+			actualD->propagarAssembling(actualS,adminis);
+			estaticas.Siguiente();
+		}
+		dinamicas.Siguiente();
+	}
+
+	dinamico=NULL;
+}
+/***********************************************************/
+
+void Project::assembling(Conector *estatico,Conector *dinamico)
+{
+	Piece *piezaDinamico;
+
+	//Ensamblamos los dos conectores
+
+	obligatorio=true;
+
+	adminis->gestion(estatico,dinamico,m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+//	estatico->assembling(dinamico,m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+
+	obligatorio=false;
+
+	piezaDinamico=dinamico->obtenerMadre();
+	//Propagamos el assembling entre la parte dinámica de la escena y la estática.
+	//propagarAssemblingParteDinamica(piezaDinamico);
+
+	//Propagamos el assembling para realizar las conexiones secundarias.
+	//TODAS CON TODAS LAS PIEZAS.
+	propagarAssemblingTotal();
+
+	//Ponemos los conectores seleccionados por el usuario nuevamente a NULL.
+	//Esto significa que después de hacer el assembling el usuario tendrá que
+	  //volver a elegir dos nuevos conectores a ensamblar.
+	selectCon1=NULL;
+	selectCon2=NULL;
+	nSelect=0; //Volvemos al principio
+}
+
+/***********************************************************/
+
+void Project::deteccionColisionesDeslizar(float *translacion)
+{
+	DISTANCIA_CONECTOR colision;
+	Conector *hermano=NULL;
+	sirMat4d C2W,W2C;
+	sirVector4d Z(0,0,1,0),T(0,0,0,0),transW2C(0,0,0,0),aux(0,0,0,0);
+	sirVector3d trans;
+	double prodEscalar,distanciaDeslizar;
+	float modulo;
+
+	if(deslizarConector!=NULL)
+	{
+		C2W=deslizarConector->obtenerC2W();
+
+		Z=C2W*Z;
+		Z.normalize();
+
+		//Final-inicial.
+		T[0]=translacion[0];
+		T[1]=translacion[1];
+		T[2]=translacion[2];
+
+		prodEscalar=T*Z; //Producto escalar entre dos vectores.
+
+		trans[0]=Z[0]*prodEscalar;
+		trans[1]=Z[1]*prodEscalar;
+		trans[2]=Z[2]*prodEscalar;
+
+		transW2C[0]=trans[0];
+		transW2C[1]=trans[1];
+		transW2C[2]=trans[2];
+		transW2C[3]=0;
+
+		W2C=C2W.inverse();
+
+		transW2C=W2C*transW2C; //Convertimos la traslación a coordenadas de conector.
+		if(transW2C[2]>=0)
+		{
+			//Deslizamos en el eje Z++ del conector.
+			colision=deslizarConector->deteccionColisionesDeslizar(1,trans);
+			distanciaDeslizar=colision.distancia;
+			//Si la distancia a deslizar es cero no hacemos nada.
+			if(!iguales(distanciaDeslizar,0))
+			{
+				if(distanciaDeslizar!=-1)
+				{
+					modulo=(float)transW2C.Modulo();
+					//Comparamos distancias positivas
+					if(modulo>distanciaDeslizar)
+					{
+						//Vector traslación en el espacio del conector.
+						aux[0]=0;
+						aux[1]=0;
+						aux[2]=distanciaDeslizar; //+.
+
+						aux=C2W*aux; //Vector traslación en el espacio del mundo.
+
+						trans[0]=aux[0];
+						trans[1]=aux[1];
+						trans[2]=aux[2];
+					}
+				}
+			}
+		}
+		else
+		{
+			//Deslizamos en el eje Z-- del conector.
+			colision=deslizarConector->deteccionColisionesDeslizar(-1,trans);
+			distanciaDeslizar=colision.distancia;
+			if(!iguales(distanciaDeslizar,0))
+			{
+				if(distanciaDeslizar!=-1)
+				{
+					modulo=(float)transW2C.Modulo();
+					//Distancias siempre positivas
+					if(modulo>distanciaDeslizar)
+					{
+						//Vector traslación en el espacio del conector.
+						aux[0]=0;
+						aux[1]=0;
+						aux[2]=-distanciaDeslizar; //-.
+
+						aux=C2W*aux; //Vector traslación en el espacio del mundo.
+
+						trans[0]=aux[0];
+						trans[1]=aux[1];
+						trans[2]=aux[2];
+					}
+				}
+			}
+		}
+
+		//Si la traslación es igual a cero, entonces no recalculamos conexiones.
+		if(!iguales(distanciaDeslizar,0))
+		{
+			deslizarConector->desconectarDeslizan();
+
+			//Porque con el algoritmo de arriba quedan algunos como visitados,
+			//y al eliminar conexiones hay que hacerlo para todas las piezas.
+			conectoresNoVisitados();
+
+			//Ponemos las piezas como no visitadas, porque al buscar conectores dinámicos
+			// y estáticos en los métodos caminoDeAssembings se pueden poner algunas piezas
+			//como visitadas y esto perjudicaría al deslizarlas,moverlas,rotarlas...
+			piezasNoVisitadas();
+
+			//Deslizamos al conector.
+			deslizarConector->deslizar(trans,m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+
+			//Volvemos a calcular las nuevas posibles conexiones.
+			propagarAssemblingTotal(); //PArte Dinámica cuando funcione.
+
+			//Después de deslizar hay que volver a poner las piezas como no visitadas.
+			//No se puede utilizar el método de la pieza a deslizar, porque como se
+			//crean y destruyen conexiones, puede ser que nos dejáramos alguna pieza
+			//sin poner su flag de visitada a falso.
+			piezasNoVisitadas();
+
+			//VOLVER A VERIFICAR CONEXIONES!!!
+			//CONEXIONES Y DESCONEXIONES!!!
+		}
+	}
+}
+
+/***********************************************************/
+
+void Project::conectoresNoVisitados(void)
+{
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		pPieza->conectoresNoVisitados();
+		pPieza=pPieza->m_pNext;
+	}
+}
+
+/***********************************************************
+
+void Project::crearDatosConectores(LC_FRAN_SEL_DATA *datos)
+{
+	Piece *actual;
+	Conector *pCon;
+	char s[5],nombre[30];
+	int i=0;
+
+	piezas.Primero();
+	while(!piezas.Fin())
+	{
+		actual=piezas.Actual();
+		_itoa(i+1,s,10);
+		strcpy(nombre,s);
+		strcat(nombre,".-");
+		actual->primeroLibre();
+		while(!actual->finLibre())
+		{
+			pCon=actual->obtenerActualLibre();
+			strcat(nombre,pCon->obtenerNombre());
+			strcpy(datos[i].nombre,nombre);
+			if(i==0) datos[i].seleccionado=true;
+			else datos[i].seleccionado=false;
+			datos[i].puntero=pCon;
+			i++;
+			_itoa(i+1,s,10);
+			strcpy(nombre,s);
+			strcat(nombre,".-");
+			actual->siguienteLibre();
+		}
+		piezas.Siguiente();
+	}
+	datos[i].puntero=NULL;
+}
+
+***********************************************************
+
+Conector *Project::conectorSeleccionado(LC_FRAN_SEL_DATA *datos)
+{
+	Conector *pCon=NULL;
+	int i=0;
+	bool trobat=false;
+
+	if (SystemDoDialog(LC_DLG_FRAN_SELECT_CONECTOR,datos))
+	{
+		//SelectAndFocusNone(false);
+		while((datos[i].puntero!=NULL) && (!trobat))
+		{
+			if (datos[i].seleccionado)
+			{
+				trobat=true;
+				pCon=((Conector*)datos[i].puntero);
+			}
+			else i=i+1;
+		}
+	}
+
+	return pCon;
+}
+
+***********************************************************/
+
+int Project::introducirPiezaLista(Piece *pPieza)
+{
+	Conector *ocupado;
+	Piece *madre;
+	int conLibres=0;
+
+	if(!pPieza->obtenerEstadoVisita()/*!piezas.Existe(pPieza)*/)
+	{
+		pPieza->piezaVisitada(); //Ponemos a la pieza como visitada
+		piezas.Introducir(pPieza); //La introducimos en la lista
+		conLibres=conLibres+(pPieza->nElementosLibre()); //Sumamos el número de conectores libres que tenga la pieza
+		pPieza->primeroOcupado(); //Para cada conector ocupado de la pieza
+		while(!pPieza->finOcupado())
+		{
+			ocupado=pPieza->obtenerActualOcupado();
+			madre=ocupado->obtenerMadre();
+			conLibres=conLibres+introducirPiezaLista(madre);
+			pPieza->siguienteOcupado();
+		}
+	}
+
+	return conLibres;
+}
+
+/***********************************************************/
+
+//Se le lamará cuando se aprete cada vez el botón |Con|.
+void Project::vaciarLista(void)
+{
+	//Después de haber seleccionado el conector, esborramos la lista de piezas
+	piezas.Primero();
+	while(!piezas.Vacia())
+	{
+		piezas.Esborrar(); //Eliminamos la piezas actual de la lista de piezas
+	}
+}
+
+/***********************************************************/
+
+Conector *Project::buscarConectorOcupado(int id)
+{
+	Piece *pPieza;
+	Conector *pCon=NULL;
+	bool trobat=false;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL && !trobat)
+	{
+		//En alguna de las piezas tiene que estar el conector que buscamos
+		pCon=pPieza->buscarConectorOcupado(id);
+		if(pCon!=NULL) trobat=true;
+		else pPieza=pPieza->m_pNext;
+	}
+
+	return pCon;
+}
+
+/***********************************************************/
+
+Conector *Project::buscarConectorLibre(int id)
+{
+	Piece *pPieza;
+	Conector *pCon=NULL;
+	bool trobat=false;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL && !trobat)
+	{
+		//En alguna de las piezas tiene que estar el conector que buscamos
+		pCon=pPieza->buscarConectorLibre(id);
+		if(pCon!=NULL) trobat=true;
+		else pPieza=pPieza->m_pNext;
+	}
+
+	return pCon;
+}
+
+/***********************************************************/
+
+void Project::borrarAssemblings(void)
+{
+	Piece *pPieza;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		pPieza->borrar(); //Ponemos todos los conectores como libres y les desconectamos
+		pPieza=pPieza->m_pNext;
+	}
+}
+
+/***********************************************************/
+
+int Project::numeroAssemblings(void)
+{
+	Piece *pPieza;
+	Conector *pCon;
+	ListaConector conectores; //Lista<Conector*> conectores;
+	int cont=0;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL)
+	{
+		pPieza->primeroOcupado();
+		while(!pPieza->finOcupado())
+		{
+			pCon=pPieza->obtenerActualOcupado();
+			if(!conectores.Existe(pCon))
+			{
+				conectores.Introducir(pCon);
+				cont=cont+1;
+			}
+			pPieza->siguienteOcupado();
+		}
+		pPieza=pPieza->m_pNext;
+	}
+
+	return cont;
+}
+
+/***********************************************************/
+
+void Project::restablecerAssemblings(File *file,int nAssemblings)
+{
+	int i,id1,id2;
+	Conector *pCon1,*pCon2;
+
+	for(i=0;i<nAssemblings;i++)
+	{
+		//A cada iteración leemos dos IDs
+		file->ReadLong(&id1,1);
+		file->ReadLong(&id2,1);
+		pCon1=buscarConectorOcupado(id1); //Lo buscamos en la lista de conectores ocupados
+		pCon2=buscarConectorOcupado(id2); //Lo buscamos en la lista de conectores ocupados
+		//Los conectores saben que están conectados mútuamente
+		pCon1->introducirConector(pCon2);
+		pCon2->introducirConector(pCon1);
+	}
+}
+
+/***********************************************************/
+
+void Project::transformar(unsigned short nTime,bool bAnimation,bool bAddKey)
+{
+	Piece *actual;
+
+	actual=m_pPieces;
+	while(actual!=NULL)
+	{
+		actual->transformar(nTime,bAnimation,bAddKey);
+		actual=actual->m_pNext;
+	}
+}
+
+Conector *Project::buscarMotor()
+{
+	Piece *pPieza;
+	Conector *pCon=NULL;
+	bool trobat=false;
+
+	pPieza=m_pPieces;
+	while(pPieza!=NULL && !trobat)
+	{
+		//En alguna de las piezas tiene que estar el conector que buscamos
+		pCon=pPieza->obtenerMotor();
+		if(pCon!=NULL) trobat=true;
+		else pPieza=pPieza->m_pNext;
+	}
+
+	return pCon;
+}
+
+/**************** XUS *************************/
+void Project::EjecutarMotor()
+{
+	Conector* pMotor;
+
+	pMotor=buscarMotor();
+	if(pMotor!=NULL)
+	{
+		pMotor->rotarConector(m_bAnimation ? m_nCurFrame : m_nCurStep, m_bAnimation, m_bAddKeys);
+		UpdateAllViews();
+	}
+}
+

@@ -1080,6 +1080,75 @@ static void decodeconnections(FILE *F, Matrix *mat, unsigned char defcolor, char
 			m1.FromLDraw(fm);
 			m2.Multiply(*mat, m1);
 
+			/***************FRAN**************/
+			char cadena[300];
+			char n1[30],n2[30],n3[30],n4[30],n5[30],n6[30],n7[30],n8[30],n9[30],n10[30],n11[30],n12[30],n13[30],n14[30],n15[30],n16[30];
+
+			_gcvt(m2.m[0],7,n1);
+			_gcvt(m2.m[1],7,n2);
+			_gcvt(m2.m[2],7,n3);
+			_gcvt(m2.m[3],7,n4);
+			_gcvt(m2.m[4],7,n5);
+			_gcvt(m2.m[5],7,n6);
+			_gcvt(m2.m[6],7,n7);
+			_gcvt(m2.m[7],7,n8);
+			_gcvt(m2.m[8],7,n9);
+			_gcvt(m2.m[9],7,n10);
+			_gcvt(m2.m[10],7,n11);
+			_gcvt(m2.m[11],7,n12);
+			_gcvt(m2.m[12],7,n13);
+			_gcvt(m2.m[13],7,n14);
+			_gcvt(m2.m[14],7,n15);
+			_gcvt(m2.m[15],7,n16);
+
+			strcpy(cadena,"(");
+			strcat(cadena,n1);
+			strcat(cadena,",");
+			strcat(cadena,n2);
+			strcat(cadena,",");
+			strcat(cadena,n3);
+			strcat(cadena,",");
+			strcat(cadena,n4);
+			strcat(cadena,")");
+			strcat(cadena," / ");
+
+			strcat(cadena,"(");
+			strcat(cadena,n5);
+			strcat(cadena,",");
+			strcat(cadena,n6);
+			strcat(cadena,",");
+			strcat(cadena,n7);
+			strcat(cadena,",");
+			strcat(cadena,n8);
+			strcat(cadena,")");
+			strcat(cadena," / ");
+
+			strcat(cadena,"(");
+			strcat(cadena,n9);
+			strcat(cadena,",");
+			strcat(cadena,n10);
+			strcat(cadena,",");
+			strcat(cadena,n11);
+			strcat(cadena,",");
+			strcat(cadena,n12);
+			strcat(cadena,")");
+			strcat(cadena," / ");
+
+			strcat(cadena,"(");
+			strcat(cadena,n13);
+			strcat(cadena,",");
+			strcat(cadena,n14);
+			strcat(cadena,",");
+			strcat(cadena,n15);
+			strcat(cadena,",");
+			strcat(cadena,n16);
+			strcat(cadena,")");
+			strcat(cadena," / ");
+
+			AfxMessageBox(cadena);
+
+			/***************FRAN**************/
+
 			decodeconnections (tf, &m2, (unsigned char)color, dir, piece);
 //			while (info->next)
 //				info = info->next;

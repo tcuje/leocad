@@ -53,6 +53,9 @@ public:
 	CFlatToolBar  m_wndStandardBar;
 	CFlatToolBar  m_wndToolsBar;
 	CFlatToolBar  m_wndAnimationBar;
+	/***************FRAN**************/
+	CFlatToolBar  m_wndAssemblingBar;
+	/**************FRAN**************/
 	CPiecesBar    m_wndPiecesBar;
   CSplitterWnd  m_wndSplitter;
 
@@ -78,6 +81,8 @@ protected:
 	afx_msg void OnFilePrintPieceList();
 	afx_msg void OnActivateApp(BOOL bActive, HTASK hTask);
 	afx_msg void OnViewNewView();
+	afx_msg void OnTimer(UINT nIDEvent);
+
 	//}}AFX_MSG
 
 	// Status bar

@@ -239,6 +239,28 @@ void PieceInfo::LoadIndex (File& file)
   m_fDimensions[3] = (float)sh[3]/scale;
   m_fDimensions[4] = (float)sh[4]/scale;
   m_fDimensions[5] = (float)sh[5]/scale;
+
+  /**********FRAN**********/
+  if(strcmp(m_strName,"3647")==0)
+  {
+	  PieceInfo * pInfo=new PieceInfo();
+	  pInfo=this;
+
+	  pInfo->LoadInformation();
+
+	  infospur=pInfo;
+  }
+  else if(strcmp(m_strName,"3704")==0)
+  {
+	  PieceInfo *pInfo=new PieceInfo();
+	  pInfo=this;
+
+	  pInfo->LoadInformation();
+
+	  infoaxle=pInfo;
+  }
+
+  /**********FRAN**********/
 }
 
 GLuint PieceInfo::AddRef()

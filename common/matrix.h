@@ -6,6 +6,10 @@
 
 class File;
 
+/********FRAN*******/
+#include "Algebra3.h"
+/********FRAN*******/
+
 class Matrix
 {
  public:
@@ -49,6 +53,13 @@ class Matrix
 	bool FromInverse(double* src);
 	void CreatePerspective (float fovy, float aspect, float nearval, float farval);
   void CreateLookat (const float *eye, const float *target, const float *up);
+
+  /**********FRAN*********/
+  void crear(double *matriz);
+  void crearx(float *matriz);
+  void modificarmat();
+  void imprimirMatrix();
+  /**********FRAN*********/
 
  public:
   float m[16];
