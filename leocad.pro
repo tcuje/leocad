@@ -191,7 +191,8 @@ SOURCES += common/view.cpp \
     common/lc_partselectionwidget.cpp \
     common/lc_timelinewidget.cpp \
     qt/lc_renderdialog.cpp \
-    qt/lc_setsdatabasedialog.cpp
+    qt/lc_setsdatabasedialog.cpp \
+    tinyxml2/tinyxml2.cpp
 HEADERS += \
     common/view.h \
     common/texfont.h \
@@ -254,7 +255,8 @@ HEADERS += \
     common/lc_partselectionwidget.h \
     common/lc_timelinewidget.h \
     qt/lc_renderdialog.h \
-    qt/lc_setsdatabasedialog.h
+    qt/lc_setsdatabasedialog.h \
+    tinyxml2/tinyxml2.h
 FORMS += \ 
     qt/lc_qarraydialog.ui \
     qt/lc_qgroupdialog.ui \
