@@ -192,7 +192,8 @@ SOURCES += common/view.cpp \
     common/lc_timelinewidget.cpp \
     qt/lc_renderdialog.cpp \
     qt/lc_setsdatabasedialog.cpp \
-    tinyxml2/tinyxml2.cpp
+    leomcad/tinyxml2.cpp \
+    leomcad/lm_connector.cpp
 HEADERS += \
     common/view.h \
     common/texfont.h \
@@ -256,7 +257,9 @@ HEADERS += \
     common/lc_timelinewidget.h \
     qt/lc_renderdialog.h \
     qt/lc_setsdatabasedialog.h \
-    tinyxml2/tinyxml2.h
+    leomcad/tinyxml2.h \
+    leomcad/lm_connectortype.h \
+    leomcad/lm_connector.h
 FORMS += \ 
     qt/lc_qarraydialog.ui \
     qt/lc_qgroupdialog.ui \

@@ -17,6 +17,10 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QtConcurrent>
 #endif
+#include "leomcad/tinyxml2.h"
+#include <iostream>
+#include "leomcad/lm_connectortype.h"
+#include "leomcad/lm_connector.h"
 
 #if MAX_MEM_LEVEL >= 8
 #  define DEF_MEM_LEVEL 8
@@ -1314,7 +1318,22 @@ bool lcPiecesLibrary::LoadPieceData(PieceInfo* Info)
 			sprintf(FileName, "parts/%s", Info->mFileName);
 			PieceFile.SetFileName(mLibraryDir.absoluteFilePath(QLatin1String(FileName)));
 			if (PieceFile.Open(QIODevice::ReadOnly))
+			{
 				Loaded = ReadMeshData(PieceFile, lcMatrix44Identity(), 16, false, TextureStack, MeshData, LC_MESHDATA_SHARED, true, nullptr, false);
+				lcDiskFile LciFile;
+				QString name = QString(Info->mFileName);
+				LciFile.SetFileName(mLibraryDir.absoluteFilePath(QString("lci/" + name.left(name.lastIndexOf('.')).toUpper() + ".lci"))); // find file completely case independent? win/linux?
+				if (Loaded)
+				{
+					if (LciFile.Open(QIODevice::ReadOnly))
+					{
+						qDebug() << "Reading lci file for " << FileName;
+						ReadLciData(LciFile);
+					}
+					else
+						qDebug() << "Could not find lci for " << FileName;
+				}
+			}
 		}
 	}
 	
@@ -2431,6 +2450,114 @@ bool lcPiecesLibrary::ReadMeshData(lcFile& File, const lcMatrix44& CurrentTransf
 	}
 
 	return true;
+}
+
+lmConnector* CreateConnector(QString ConnectorName, QStringList ConnectorMatrixStr, QString ConnectorLengthStr, QString ConnectorId, QString ConnectorBrotherId)
+{
+	lmConnectorType ConnectorType = connectorTypeFromQString(ConnectorName);
+	if (ConnectorType == LM_CONNECTOR_UNKNOWN)
+	{
+		qDebug() << "Could not identify connector type for name " << ConnectorName << endl;
+		return nullptr;
+	}
+
+	const auto MatrixSize = ConnectorMatrixStr.size();
+	if (MatrixSize != 16)
+	{
+		qDebug() << "Connector matrix has " << MatrixSize << " instead of 16 entries" << endl;
+		return nullptr;
+	}
+
+	lcVector4 MatrixVector[4];
+	bool ConnectorMatrixOk = true;
+	for (int c = 0; c < 4 && ConnectorMatrixOk; c++)
+		for (int r = 0; r < 4 && ConnectorMatrixOk; r++)
+			MatrixVector[c][r] = ConnectorMatrixStr.at(c * 4 + r).toInt(&ConnectorMatrixOk);
+
+	if (!ConnectorMatrixOk)
+	{
+		qDebug() << "Connector has non integer matrix entries" << endl;
+		return nullptr;
+	}
+
+	lcMatrix44 ConnectorMatrix(MatrixVector[0], MatrixVector[1], MatrixVector[2], MatrixVector[3]);
+
+	qDebug() << "Connector Matrix is" << endl << ConnectorMatrix;
+
+	bool ConnectorLengthOk = false;
+	int ConnectorLength = ConnectorLengthStr.toInt(&ConnectorLengthOk);
+
+	if ((ConnectorType == LM_CONNECTOR_AXLE || ConnectorType == LM_CONNECTOR_AXLE_HOLE || ConnectorType == LM_CONNECTOR_CYLINDRICAL_HOLE))
+	{
+		if (!ConnectorLengthOk)
+		{
+			qDebug() << "Connector is missing required field connector_length" << endl;
+			return nullptr;
+		}
+		return new lmConnector(ConnectorType, ConnectorMatrix, ConnectorLength, ConnectorId, ConnectorBrotherId);
+	}
+	else
+		return new lmConnector(ConnectorType, ConnectorMatrix);
+}
+
+// TODO move XML/LCI parsing to helper or factory?
+void lcPiecesLibrary::ReadLciData(lcFile& File)
+{
+	// TODO Use existing memory buffer, in case of lcMemFile
+	size_t FileLength = File.GetLength();
+	char* Buffer = new char[FileLength];
+	FileLength = File.ReadBuffer(Buffer, FileLength);
+	tinyxml2::XMLDocument Doc;
+	Doc.Parse(Buffer, FileLength);
+	// iterate all connector elements
+	tinyxml2::XMLElement* ConnectorXml = Doc.FirstChildElement("connector");
+	while (ConnectorXml)
+	{
+		tinyxml2::XMLElement* ChildXml = ConnectorXml->FirstChildElement();
+		QString ConnectorName;
+		QStringList ConnectorMatrixStr;
+		QString ConnectorLengthStr;
+		QString ConnectorId;
+		QString ConnectorBrotherId;
+		while (ChildXml)
+		{
+			QString ChildName(ChildXml->Name());
+			if (!ChildName.compare("name"))
+				ConnectorName = ChildXml->FirstChild()->Value();
+			else if (!ChildName.compare("matrix"))
+				ConnectorMatrixStr = QString(ChildXml->FirstChild()->Value()).split(' ');
+			else if (!ChildName.compare("parameters"))
+			{
+				tinyxml2::XMLElement* Parameter = ChildXml->FirstChildElement();
+				while (Parameter)
+				{
+					QString ParameterName(Parameter->Name());
+					if (!ParameterName.compare("lenght") || !ParameterName.compare("length")) // typo introduced in the original file format
+						ConnectorLengthStr = Parameter->Value();
+					else if (!ParameterName.compare("id"))
+						ConnectorId = Parameter->Value();
+					else if (!ParameterName.compare("brother"))
+						ConnectorBrotherId = Parameter->Value();
+					else
+						qDebug() << "Unknown LCI Parameter " << ParameterName;
+					Parameter = Parameter->NextSiblingElement();
+				}
+			}
+			else
+				qDebug() << "LCI Child with unknown type " << ChildName;
+
+			ChildXml = ChildXml->NextSiblingElement();
+		}
+
+		lmConnector* Connector = CreateConnector(ConnectorName, ConnectorMatrixStr, ConnectorLengthStr, ConnectorId, ConnectorBrotherId);
+		if (Connector)
+		{
+			// FIXME attach connector instance to piece info
+			qDebug() << "Connector created";
+		}
+
+		ConnectorXml = ConnectorXml->NextSiblingElement("connector");
+	}
 }
 
 void lcLibraryMeshData::ResequenceQuad(int* Indices, int a, int b, int c, int d)

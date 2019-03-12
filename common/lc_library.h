@@ -210,6 +210,7 @@ public:
 	}
 
 	bool ReadMeshData(lcFile& File, const lcMatrix44& CurrentTransform, quint32 CurrentColorCode, bool InvertWinding, lcArray<lcLibraryTextureMap>& TextureStack, lcLibraryMeshData& MeshData, lcMeshDataType MeshDataType, bool Optimize, Project* CurrentProject, bool SearchProjectFolder);
+	void ReadLciData(lcFile& File);
 	lcMesh* CreateMesh(PieceInfo* Info, lcLibraryMeshData& MeshData);
 	void ReleaseBuffers(lcContext* Context);
 	void UpdateBuffers(lcContext* Context);
