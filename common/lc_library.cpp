@@ -1326,10 +1326,7 @@ bool lcPiecesLibrary::LoadPieceData(PieceInfo* Info)
 				if (Loaded)
 				{
 					if (LciFile.Open(QIODevice::ReadOnly))
-					{
-						qDebug() << "Reading lci file for " << FileName;
-						ReadLciData(LciFile);
-					}
+						ReadLciData(Info, LciFile);
 					else
 						qDebug() << "Could not find lci for " << FileName;
 				}
@@ -2482,8 +2479,6 @@ lmConnector* CreateConnector(QString ConnectorName, QStringList ConnectorMatrixS
 
 	lcMatrix44 ConnectorMatrix(MatrixVector[0], MatrixVector[1], MatrixVector[2], MatrixVector[3]);
 
-	qDebug() << "Connector Matrix is" << endl << ConnectorMatrix;
-
 	bool ConnectorLengthOk = false;
 	int ConnectorLength = ConnectorLengthStr.toInt(&ConnectorLengthOk);
 
@@ -2501,7 +2496,7 @@ lmConnector* CreateConnector(QString ConnectorName, QStringList ConnectorMatrixS
 }
 
 // TODO move XML/LCI parsing to helper or factory?
-void lcPiecesLibrary::ReadLciData(lcFile& File)
+void lcPiecesLibrary::ReadLciData(PieceInfo* Info, lcFile& File)
 {
 	// TODO Use existing memory buffer, in case of lcMemFile
 	size_t FileLength = File.GetLength();
@@ -2551,10 +2546,7 @@ void lcPiecesLibrary::ReadLciData(lcFile& File)
 
 		lmConnector* Connector = CreateConnector(ConnectorName, ConnectorMatrixStr, ConnectorLengthStr, ConnectorId, ConnectorBrotherId);
 		if (Connector)
-		{
-			// FIXME attach connector instance to piece info
-			qDebug() << "Connector created";
-		}
+			Info->AddConnector(Connector);
 
 		ConnectorXml = ConnectorXml->NextSiblingElement("connector");
 	}

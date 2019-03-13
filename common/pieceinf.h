@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "lc_math.h"
 #include "lc_array.h"
+#include "leomcad/lm_connector.h"
 
 #define LC_PIECE_HAS_DEFAULT        0x01 // Piece has triangles using the default color
 #define LC_PIECE_HAS_SOLID          0x02 // Piece has triangles using a solid color
@@ -150,6 +151,7 @@ public:
 	void GetPartsList(int DefaultColorIndex, bool IncludeSubmodels, lcPartsList& PartsList) const;
 	void GetModelParts(const lcMatrix44& WorldMatrix, int DefaultColorIndex, lcArray<lcModelPartsEntry>& ModelParts) const;
 	void UpdateBoundingBox(lcArray<lcModel*>& UpdatedModels);
+	void AddConnector(lmConnector* Connector);
 
 	void Load();
 	void Unload();
@@ -166,6 +168,7 @@ public:
 
 protected:
 	void ReleaseMesh();
+	void ReleaseConnectors();
 
 	int mRefCount;
 	lcModel* mModel;
@@ -173,5 +176,7 @@ protected:
 	lcMesh* mMesh;
 	lcBoundingBox mBoundingBox;
 	lcSynthInfo* mSynthInfo;
+	lcArray<lmConnector*> mConnectors;
+	std::map<QString, lmConnector*> mConnectorsById;
 };
 

@@ -178,11 +178,18 @@ void PieceInfo::ReleaseMesh()
 	}
 }
 
+void PieceInfo::ReleaseConnectors()
+{
+	mConnectors.DeleteAll();
+	mConnectorsById.clear();
+}
+
 void PieceInfo::Unload()
 {
 	ReleaseMesh();
 	mState = LC_PIECEINFO_UNLOADED;
 	mModel = nullptr;
+	ReleaseConnectors();
 
 	if (IsModel())
 		lcGetPiecesLibrary()->RemovePiece(this);
@@ -362,4 +369,15 @@ void PieceInfo::UpdateBoundingBox(lcArray<lcModel*>& UpdatedModels)
 		mModel->UpdatePieceInfo(UpdatedModels);
 	else if (mFlags & LC_PIECE_PROJECT)
 		mProject->UpdatePieceInfo(this);
+}
+
+void PieceInfo::AddConnector(lmConnector* Connector)
+{
+	if (!Connector)
+		return;
+
+	mConnectors.Add(Connector);
+	QString Id = Connector->Id();
+	if (!Id.isEmpty())
+		mConnectorsById[Id] = Connector;
 }
