@@ -2411,7 +2411,7 @@ void Project::ExportWavefront(const QString& FileName)
 		for (int VertexIdx = 0; VertexIdx < Mesh->mNumVertices; VertexIdx++)
 		{
 			lcVector3 Vertex = lcMul31(Verts[VertexIdx].Position, ModelWorld);
-			sprintf(Line, "v %.2f %.2f %.2f\n", Vertex[0], Vertex[1], Vertex[2]);
+			sprintf(Line, "v %.2f %.2f %.2f\n", Vertex[0], Vertex[2], -Vertex[1]);
 			OBJFile.WriteLine(Line);
 		}
 
@@ -2431,7 +2431,7 @@ void Project::ExportWavefront(const QString& FileName)
 		for (int VertexIdx = 0; VertexIdx < Mesh->mNumVertices; VertexIdx++)
 		{
 			lcVector3 Normal = lcMul30(lcUnpackNormal(Verts[VertexIdx].Normal), ModelWorld);
-			sprintf(Line, "vn %.2f %.2f %.2f\n", Normal[0], Normal[1], Normal[2]);
+			sprintf(Line, "vn %.2f %.2f %.2f\n", Normal[0], -Normal[2], -Normal[1]);
 			OBJFile.WriteLine(Line);
 		}
 
