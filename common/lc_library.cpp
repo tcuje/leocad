@@ -2468,8 +2468,16 @@ lmConnector* CreateConnector(QString ConnectorName, QStringList ConnectorMatrixS
 	lcVector4 MatrixVector[4];
 	bool ConnectorMatrixOk = true;
 	for (int c = 0; c < 4 && ConnectorMatrixOk; c++)
+	{
 		for (int r = 0; r < 4 && ConnectorMatrixOk; r++)
-			MatrixVector[c][r] = ConnectorMatrixStr.at(c * 4 + r).toInt(&ConnectorMatrixOk);
+		{
+			MatrixVector[c][r] = ConnectorMatrixStr.at(c * 4 + r).toFloat(&ConnectorMatrixOk);
+		}
+		// y and z axis are swapped otherwise
+		const auto k = MatrixVector[c][1];
+		MatrixVector[c][1] = MatrixVector[c][2];
+		MatrixVector[c][2] = -k;
+	}
 
 	if (!ConnectorMatrixOk)
 	{
