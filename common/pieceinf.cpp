@@ -381,3 +381,8 @@ void PieceInfo::AddConnector(lmConnector* Connector)
 	if (!Id.isEmpty())
 		mConnectorsById[Id] = Connector;
 }
+
+lcArray<lmConnector*> PieceInfo::GetConnectors()
+{
+	return mConnectors;
+}

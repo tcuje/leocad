@@ -6,6 +6,8 @@ enum class lcRenderMeshState : int;
 #include "object.h"
 #include "lc_colors.h"
 #include "lc_math.h"
+#include "pieceinf.h"
+#include "leomcad/lm_piececonnector.h"
 
 #define LC_PIECE_HIDDEN                   0x00001
 #define LC_PIECE_PIVOT_POINT_VALID        0x00002
@@ -41,7 +43,8 @@ enum lcPieceSection
 	LC_PIECE_SECTION_CONTROL_POINT_5,
 	LC_PIECE_SECTION_CONTROL_POINT_6,
 	LC_PIECE_SECTION_CONTROL_POINT_7,
-	LC_PIECE_SECTION_CONTROL_POINT_8
+	LC_PIECE_SECTION_CONTROL_POINT_8,
+	LM_PIECE_SECTION_CONNECTOR
 };
 
 #define LC_PIECE_SECTION_INVALID (~0U)
@@ -77,6 +80,7 @@ public:
 			mState |= LC_PIECE_SELECTION_MASK;
 		else
 			mState &= ~(LC_PIECE_SELECTION_MASK | LC_PIECE_FOCUS_MASK);
+		mActiveConnector = -1;
 	}
 
 	virtual void SetSelected(quint32 Section, bool Selected) override
@@ -148,6 +152,18 @@ public:
 		}
 	}
 
+	void SetSelectedConnector(qint32 Connector)
+	{
+		Q_ASSERT(Connector >= 0 && Connector < mConnectors.GetSize());
+		mActiveConnector = Connector;
+	}
+
+	lmPieceConnector* GetConnector(qint32 Connector)
+	{
+		Q_ASSERT(Connector >= 0 && Connector < mConnectors.GetSize());
+		return mConnectors[Connector];
+	}
+
 	virtual bool IsFocused() const override
 	{
 		return (mState & LC_PIECE_FOCUS_MASK) != 0;
@@ -190,6 +206,7 @@ public:
 
 	virtual void SetFocused(quint32 Section, bool Focused) override
 	{
+		mActiveConnector = -1;
 		switch (Section)
 		{
 		case LC_PIECE_SECTION_POSITION:
@@ -285,6 +302,9 @@ public:
 
 		if (mState & LC_PIECE_CONTROL_POINT_8_FOCUSED)
 			return LC_PIECE_SECTION_CONTROL_POINT_8;
+
+		if (mActiveConnector >= 0)
+			return LM_PIECE_SECTION_CONNECTOR;
 
 		return LC_PIECE_SECTION_INVALID;
 	}
@@ -572,4 +592,7 @@ protected:
 	quint32 mState;
 	lcArray<lcPieceControlPoint> mControlPoints;
 	lcMesh* mMesh;
+
+	lcArray<lmPieceConnector*> mConnectors;
+	qint32 mActiveConnector;
 };

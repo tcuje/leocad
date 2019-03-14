@@ -30,6 +30,15 @@ lcPiece::lcPiece(PieceInfo* Info)
 	mGroup = nullptr;
 	mFileLine = -1;
 	mPivotMatrix = lcMatrix44Identity();
+	mActiveConnector = -1;
+	// FIXME add connectors after info is loaded
+//	mConnectors.DeleteAll();
+//	mActiveConnector = nullptr;
+//	lcArray<lmConnector*> Connectors = Info->GetConnectors();
+//	for (int c = 0; c < Connectors.GetSize(); c++)
+//	{
+//		mConnectors.Add(new lmPieceConnector(Connectors[c]));
+//	}
 }
 
 lcPiece::lcPiece(const lcPiece& Other)
@@ -45,6 +54,7 @@ lcPiece::lcPiece(const lcPiece& Other)
 	mGroup = Other.mGroup;
 	mFileLine = -1;
 	mPivotMatrix = Other.mPivotMatrix;
+	mActiveConnector = Other.mActiveConnector;
 
 	mPositionKeys = Other.mPositionKeys;
 	mRotationKeys = Other.mRotationKeys;
@@ -503,6 +513,28 @@ void lcPiece::RayTest(lcObjectRayTest& ObjectRayTest) const
 			ObjectRayTest.ObjectSection.Intersection = Intersection;
 		}
 	}
+
+	for (int c = 0; c < mConnectors.GetSize(); c++)
+	{
+		lmPieceConnector* Connector = mConnectors[c];
+
+		float Size = 7.5f;
+		lcVector3 Min(-Size, -Size, -Size);
+		lcVector3 Max(Size, Size, Size);
+
+		lcMatrix44 InverseTransform = lcMatrix44AffineInverse(Connector->Matrix());
+		lcVector3 PointStart = lcMul31(Start, InverseTransform);
+		lcVector3 PointEnd = lcMul31(End, InverseTransform);
+
+		float Distance;
+		if (lcBoundingBoxRayIntersectDistance(Min, Max, PointStart, PointEnd, &Distance, nullptr) && (Distance < ObjectRayTest.Distance))
+		{
+			ObjectRayTest.ObjectSection.Object = const_cast<lcPiece*>(this);
+			ObjectRayTest.ObjectSection.Section = LM_PIECE_SECTION_CONNECTOR;
+			ObjectRayTest.ObjectSection.Subsection = c;
+			ObjectRayTest.Distance = Distance;
+		}
+	}
 }
 
 void lcPiece::BoxTest(lcObjectBoxTest& ObjectBoxTest) const
@@ -637,6 +669,35 @@ void lcPiece::DrawInterface(lcContext* Context, const lcScene& Scene) const
 
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
+	}
+
+	for (int c = 0; c < mConnectors.GetSize(); c++)
+	{
+		lmPieceConnector* Connector = mConnectors[c];
+		if (c == mActiveConnector)
+			Context->SetColor(lcVector4(1.0f, 1.0f, 1.0f, 1.000f));
+		else
+			Context->SetColor(lcVector4(1.0f, 0.0f, 1.0f, 1.000f));
+
+		const float Size = 7.5f;
+		const float Verts[8 * 3] =
+		{
+			-Size, -Size, -Size, -Size,  Size, -Size, Size,  Size, -Size, Size, -Size, -Size,
+			-Size, -Size,  Size, -Size,  Size,  Size, Size,  Size,  Size, Size, -Size,  Size
+		};
+
+		const GLushort Indices[24] =
+		{
+			0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7
+		};
+
+		Context->SetWorldMatrix(lcMul(Connector->Matrix(), WorldMatrix));
+
+		Context->SetVertexBufferPointer(Verts);
+		Context->SetVertexFormatPosition(3);
+		Context->SetIndexBufferPointer(Indices);
+
+		Context->DrawIndexedPrimitives(GL_LINES, 24, GL_UNSIGNED_SHORT, 0);
 	}
 }
 

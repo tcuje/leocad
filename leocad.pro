@@ -193,7 +193,8 @@ SOURCES += common/view.cpp \
     qt/lc_renderdialog.cpp \
     qt/lc_setsdatabasedialog.cpp \
     leomcad/tinyxml2.cpp \
-    leomcad/lm_connector.cpp
+    leomcad/lm_connector.cpp \
+    leomcad/lm_piececonnector.cpp
 HEADERS += \
     common/view.h \
     common/texfont.h \
@@ -259,7 +260,8 @@ HEADERS += \
     qt/lc_setsdatabasedialog.h \
     leomcad/tinyxml2.h \
     leomcad/lm_connectortype.h \
-    leomcad/lm_connector.h
+    leomcad/lm_connector.h \
+    leomcad/lm_piececonnector.h
 FORMS += \ 
     qt/lc_qarraydialog.ui \
     qt/lc_qgroupdialog.ui \

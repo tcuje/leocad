@@ -152,6 +152,7 @@ public:
 	void GetModelParts(const lcMatrix44& WorldMatrix, int DefaultColorIndex, lcArray<lcModelPartsEntry>& ModelParts) const;
 	void UpdateBoundingBox(lcArray<lcModel*>& UpdatedModels);
 	void AddConnector(lmConnector* Connector);
+	lcArray<lmConnector*> GetConnectors();
 
 	void Load();
 	void Unload();

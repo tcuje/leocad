@@ -5,6 +5,7 @@
 #include "lc_scene.h"
 #include "lc_viewsphere.h"
 #include "lc_commands.h"
+#include "leomcad/lm_piececonnector.h"
 
 enum lcTrackButton
 {
@@ -185,6 +186,7 @@ protected:
 	lcModel* mModel;
 	lcPiece* mActiveSubmodelInstance;
 	lcMatrix44 mActiveSubmodelTransform;
+	lcArray<lmPieceConnector*> mActiveConnectors;
 
 	lcScene mScene;
 	lcDragState mDragState;

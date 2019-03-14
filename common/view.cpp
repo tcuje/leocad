@@ -2787,7 +2787,28 @@ void View::OnButtonDown(lcTrackButton TrackButton)
 		StartTracking(TrackButton);
 		break;
 	case LM_TRACKTOOL_ASSEMBLE:
-		// FIXME select connector, add to active connectors, if multiple otherwise do nothing
+		lcObjectSection ObjectSection = FindObjectUnderPointer(true, false);
+
+		lcPiece* SelectedObject = (lcPiece*)ObjectSection.Object;
+		if (SelectedObject && ObjectSection.Section == LM_PIECE_SECTION_CONNECTOR)
+		{
+			if (mActiveConnectors.IsEmpty())
+			{
+				ActiveModel->ClearSelectionAndSetFocus(ObjectSection.Object, LC_PIECE_SECTION_POSITION, false);
+				SelectedObject->SetSelectedConnector(ObjectSection.Subsection);
+			}
+			else if (mActiveConnectors[0]->IsMultiple())
+			{
+				mActiveConnectors.Add(SelectedObject->GetConnector(ObjectSection.Subsection));
+				lcArray<lcObject*> Selected;
+				Selected.Add(SelectedObject);
+				ActiveModel->AddToSelection(Selected, false, true);
+			}
+		}
+		else
+		{
+			ActiveModel->ClearSelection(true);
+		}
 		break;
 	}
 }
