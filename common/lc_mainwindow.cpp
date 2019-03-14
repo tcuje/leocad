@@ -299,6 +299,7 @@ void lcMainWindow::CreateActions()
 	mActions[LC_EDIT_ACTION_ROTATE_VIEW]->setIcon(QIcon(":/resources/action_rotate_view.png"));
 	mActions[LC_EDIT_ACTION_ROLL]->setIcon(QIcon(":/resources/action_roll.png"));
 	mActions[LC_EDIT_ACTION_ZOOM_REGION]->setIcon(QIcon(":/resources/action_zoom_region.png"));
+	mActions[LM_EDIT_ACTION_ASSEMBLE]->setIcon(QIcon(":/resources/action_assemble.png"));
 	mActions[LC_EDIT_FIND]->setIcon(QIcon(":/resources/edit_find.png"));
 	mActions[LC_EDIT_TRANSFORM_RELATIVE]->setIcon(QIcon(":/resources/edit_transform_relative.png"));
 	mActions[LC_PIECE_SHOW_EARLIER]->setIcon(QIcon(":/resources/piece_show_earlier.png"));
@@ -448,6 +449,7 @@ void lcMainWindow::CreateMenus()
 	mToolsMenu->addAction(mActions[LC_EDIT_ACTION_ROTATE_VIEW]);
 	mToolsMenu->addAction(mActions[LC_EDIT_ACTION_ROLL]);
 	mToolsMenu->addAction(mActions[LC_EDIT_ACTION_ZOOM_REGION]);
+	mToolsMenu->addAction(mActions[LM_EDIT_ACTION_ASSEMBLE]);
 
 	QMenu* FileMenu = menuBar()->addMenu(tr("&File"));
 	FileMenu->addAction(mActions[LC_FILE_NEW]);
@@ -669,6 +671,7 @@ void lcMainWindow::CreateToolBars()
 	mToolsToolBar->addAction(mActions[LC_EDIT_ACTION_ROTATE_VIEW]);
 	mToolsToolBar->addAction(mActions[LC_EDIT_ACTION_ROLL]);
 	mToolsToolBar->addAction(mActions[LC_EDIT_ACTION_ZOOM_REGION]);
+	mToolsToolBar->addAction(mActions[LM_EDIT_ACTION_ASSEMBLE]);
 	mToolsToolBar->hide();
 
 	mPartsToolBar = new QDockWidget(tr("Parts"), this);
@@ -3121,6 +3124,10 @@ void lcMainWindow::HandleCommand(lcCommandId CommandId)
 
 	case LC_EDIT_ACTION_ROLL:
 		SetTool(LC_TOOL_ROLL);
+		break;
+
+	case LM_EDIT_ACTION_ASSEMBLE:
+		SetTool(LM_TOOL_ASSEMBLE);
 		break;
 
 	case LC_EDIT_CANCEL:

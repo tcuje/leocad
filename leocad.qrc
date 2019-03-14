@@ -37,6 +37,7 @@
         <file>resources/action_zoom.png</file>
         <file>resources/action_zoom_extents.png</file>
         <file>resources/action_zoom_region.png</file>
+        <file>resources/action_assemble.png</file>
         <file>resources/cursor_camera.png</file>
         <file>resources/cursor_delete.png</file>
         <file>resources/cursor_insert.png</file>

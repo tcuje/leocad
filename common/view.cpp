@@ -464,7 +464,8 @@ LC_CURSOR_TYPE View::GetCursor() const
 		LC_CURSOR_ROTATEY,     // LC_TRACKTOOL_ORBIT_Y
 		LC_CURSOR_ROTATE_VIEW, // LC_TRACKTOOL_ORBIT_XY
 		LC_CURSOR_ROLL,        // LC_TRACKTOOL_ROLL
-		LC_CURSOR_ZOOM_REGION  // LC_TRACKTOOL_ZOOM_REGION
+		LC_CURSOR_ZOOM_REGION, // LC_TRACKTOOL_ZOOM_REGION
+		LC_CURSOR_SELECT       // LM_TRACKTOOL_ASSEMBLE
 	};
 
 	return CursorFromTrackTool[mTrackTool];
@@ -1850,7 +1851,8 @@ lcTool View::GetCurrentTool() const
 		LC_TOOL_ROTATE_VIEW, // LC_TRACKTOOL_ORBIT_Y
 		LC_TOOL_ROTATE_VIEW, // LC_TRACKTOOL_ORBIT_XY
 		LC_TOOL_ROLL,        // LC_TRACKTOOL_ROLL
-		LC_TOOL_ZOOM_REGION  // LC_TRACKTOOL_ZOOM_REGION
+		LC_TOOL_ZOOM_REGION, // LC_TRACKTOOL_ZOOM_REGION
+		LM_TOOL_ASSEMBLE     // LM_TRACKTOOL_ASSEMBLE
 	};
 
 	return ToolFromTrackTool[mTrackTool];
@@ -1881,7 +1883,8 @@ lcTrackTool View::GetOverrideTrackTool(Qt::MouseButton Button) const
 		LC_TRACKTOOL_PAN,        // LC_TOOL_PAN
 		LC_TRACKTOOL_ORBIT_XY,   // LC_TOOL_ROTATE_VIEW
 		LC_TRACKTOOL_ROLL,       // LC_TOOL_ROLL
-		LC_TRACKTOOL_ZOOM_REGION // LC_TOOL_ZOOM_REGION
+		LC_TRACKTOOL_ZOOM_REGION,// LC_TOOL_ZOOM_REGION
+		LM_TRACKTOOL_ASSEMBLE    // LM_TOOL_ASSEMBLE
 	};
 
 	return TrackToolFromTool[OverrideTool];
@@ -2401,6 +2404,10 @@ void View::UpdateTrackTool()
 		NewTrackTool = LC_TRACKTOOL_ZOOM_REGION;
 		break;
 
+	case LM_TOOL_ASSEMBLE:
+		NewTrackTool = LM_TRACKTOOL_ASSEMBLE;
+		break;
+
 	case LC_NUM_TOOLS:
 		break;
 	}
@@ -2491,6 +2498,7 @@ bool View::IsTrackToolAllowed(lcTrackTool TrackTool, quint32 AllowedTransforms) 
 	case LC_TRACKTOOL_ORBIT_XY:
 	case LC_TRACKTOOL_ROLL:
 	case LC_TRACKTOOL_ZOOM_REGION:
+	case LM_TRACKTOOL_ASSEMBLE:
 		return true;
 	}
 
@@ -2565,6 +2573,7 @@ void View::StartTracking(lcTrackButton TrackButton)
 		break;
 
 	case LC_TOOL_ZOOM_REGION:
+	case LM_TOOL_ASSEMBLE:
 		break;
 
 	case LC_NUM_TOOLS:
@@ -2652,6 +2661,9 @@ void View::StopTracking(bool Accept)
 				ActiveModel->ZoomRegionToolClicked(mCamera, AspectRatio, Points[0], Target, Corners);
 			}
 		}
+		break;
+
+	case LM_TOOL_ASSEMBLE:
 		break;
 
 	case LC_NUM_TOOLS:
@@ -2774,6 +2786,9 @@ void View::OnButtonDown(lcTrackButton TrackButton)
 	case LC_TRACKTOOL_ZOOM_REGION:
 		StartTracking(TrackButton);
 		break;
+	case LM_TRACKTOOL_ASSEMBLE:
+		// FIXME select connector, add to active connectors, if multiple otherwise do nothing
+		break;
 	}
 }
 
@@ -2822,6 +2837,8 @@ void View::OnLeftButtonDoubleClick()
 		ActiveModel->RemoveFromSelection(ObjectSection);
 	else
 		ActiveModel->ClearSelectionAndSetFocus(ObjectSection, true);
+
+	// FIXME assemble connectors if hit and tool selected
 }
 
 void View::OnMiddleButtonDown()
@@ -3222,6 +3239,9 @@ void View::OnMouseMove()
 
 	case LC_TRACKTOOL_ZOOM_REGION:
 		Redraw();
+		break;
+
+	case LM_TRACKTOOL_ASSEMBLE:
 		break;
 	}
 }

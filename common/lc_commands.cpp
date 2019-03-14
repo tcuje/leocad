@@ -654,6 +654,13 @@ lcCommand gCommands[LC_NUM_COMMANDS] =
 		QT_TRANSLATE_NOOP("Status", "Zoom into a region of the screen"),
 		""
 	},
+	// LM_EDIT_ACTION_ASSEMBLE
+	{
+		QT_TRANSLATE_NOOP("Action", "Edit.Tool.Assemble"),
+		QT_TRANSLATE_NOOP("Menu", "Assemble"),
+		QT_TRANSLATE_NOOP("Status", "Assemble pieces using mechanical constraints and connectors"),
+		""
+	},
 	// LC_EDIT_CANCEL
 	{
 		QT_TRANSLATE_NOOP("Action", "Edit.Cancel"),
@@ -1563,6 +1570,7 @@ const char* gToolNames[LC_NUM_TOOLS] =
 	QT_TRANSLATE_NOOP("Mouse", "Orbit"),         // LC_TOOL_ROTATE_VIEW
 	QT_TRANSLATE_NOOP("Mouse", "Roll"),          // LC_TOOL_ROLL
 	QT_TRANSLATE_NOOP("Mouse", "ZoomRegion")     // LC_TOOL_ZOOM_REGION
+	QT_TRANSLATE_NOOP("Mouse", "Assemble")       // LM_TOOL_ASSEMBLE
 };
 
 static_assert(sizeof(gToolNames) / sizeof(gToolNames[0]) == LC_NUM_TOOLS, "Array size mismatch.");
