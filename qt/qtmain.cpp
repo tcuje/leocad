@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
 {
 	lcApplication Application(argc, argv);
 
+#ifdef QT_NO_DEBUG
 	QTranslator QtTranslator;
 	if (QtTranslator.load(QLocale::system(), "qt", "_", QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
 		Application.installTranslator(&QtTranslator);
@@ -144,6 +145,7 @@ int main(int argc, char *argv[])
 	QTranslator Translator;
 	if (Translator.load("leocad_" + QLocale::system().name(), ":/resources"))
 		Application.installTranslator(&Translator);
+#endif
 
 	qRegisterMetaTypeStreamOperators<QList<int> >("QList<int>");
 
