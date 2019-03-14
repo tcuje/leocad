@@ -2329,6 +2329,7 @@ bool lcMainWindow::SaveProject(const QString& FileName)
 
 bool lcMainWindow::SaveProjectIfModified()
 {
+#ifdef QT_NO_DEBUG
 	Project* Project = lcGetActiveProject();
 	if (!Project->IsModified())
 		return true;
@@ -2347,6 +2348,7 @@ bool lcMainWindow::SaveProjectIfModified()
 	case QMessageBox::No:
 		break;
 	}
+#endif
 
 	return true;
 }
