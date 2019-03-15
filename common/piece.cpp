@@ -18,7 +18,7 @@
 #define LC_PIECE_CONTROL_POINT_SIZE 10.0f
 
 lcPiece::lcPiece(PieceInfo* Info)
-	: lcObject(LC_OBJECT_PIECE)
+	: QObject(), lcObject(LC_OBJECT_PIECE)
 {
 	mMesh = nullptr;
 	SetPieceInfo(Info, QString(), true);
@@ -31,18 +31,11 @@ lcPiece::lcPiece(PieceInfo* Info)
 	mFileLine = -1;
 	mPivotMatrix = lcMatrix44Identity();
 	mActiveConnector = -1;
-	// FIXME add connectors after info is loaded
-//	mConnectors.DeleteAll();
-//	mActiveConnector = nullptr;
-//	lcArray<lmConnector*> Connectors = Info->GetConnectors();
-//	for (int c = 0; c < Connectors.GetSize(); c++)
-//	{
-//		mConnectors.Add(new lmPieceConnector(Connectors[c]));
-//	}
+	connect(lcGetPiecesLibrary(), SIGNAL(PartLoaded(PieceInfo*)), this, SLOT(PartInfoLoaded(PieceInfo*)));
 }
 
 lcPiece::lcPiece(const lcPiece& Other)
-	: lcObject(LC_OBJECT_PIECE)
+	: QObject(Other.parent()), lcObject(LC_OBJECT_PIECE)
 {
 	mMesh = nullptr;
 	SetPieceInfo(Other.mPieceInfo, Other.mID, true);
@@ -970,4 +963,16 @@ void lcPiece::UpdateMesh()
 	delete mMesh;
 	lcSynthInfo* SynthInfo = mPieceInfo->GetSynthInfo();
 	mMesh = SynthInfo ? SynthInfo->CreateMesh(mControlPoints) : nullptr;
+}
+
+void lcPiece::PartInfoLoaded(PieceInfo *Info)
+{
+	if (Info != mPieceInfo)
+		return;
+
+	mConnectors.DeleteAll();
+	mActiveConnector = -1;
+	lcArray<lmConnector*> Connectors = Info->GetConnectors();
+	for (int c = 0; c < Connectors.GetSize(); c++)
+		mConnectors.Add(new lmPieceConnector(Connectors[c]));
 }

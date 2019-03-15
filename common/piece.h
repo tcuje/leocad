@@ -8,6 +8,7 @@ enum class lcRenderMeshState : int;
 #include "lc_math.h"
 #include "pieceinf.h"
 #include "leomcad/lm_piececonnector.h"
+#include "qobject.h"
 
 #define LC_PIECE_HIDDEN                   0x00001
 #define LC_PIECE_PIVOT_POINT_VALID        0x00002
@@ -55,8 +56,10 @@ struct lcPieceControlPoint
 	float Scale;
 };
 
-class lcPiece : public lcObject
+class lcPiece : public QObject, public lcObject
 {
+	 Q_OBJECT
+
 public:
 	lcPiece(PieceInfo* Info);
 	lcPiece(const lcPiece& Other);
@@ -564,6 +567,9 @@ public:
 
 	lcMatrix44 mModelWorld;
 	lcMatrix44 mPivotMatrix;
+
+public slots:
+	void PartInfoLoaded(PieceInfo* Info);
 
 protected:
 	void UpdateMesh();
