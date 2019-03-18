@@ -2296,9 +2296,9 @@ bool lcPiecesLibrary::ReadMeshData(lcFile& File, const lcMatrix44& CurrentTransf
 						MeshData.AddMeshDataNoDuplicateCheck(Primitive->mMeshData, IncludeTransform, ColorCode, Mirror ^ InvertNext, InvertNext, TextureMap, MeshDataType);
 					else if (!Primitive->mSubFile)
 					{
-						if (Optimize)
-							MeshData.AddMeshData(Primitive->mMeshData, IncludeTransform, ColorCode, Mirror ^ InvertNext, InvertNext, TextureMap, MeshDataType);
-						else
+//						if (Optimize)
+//							MeshData.AddMeshData(Primitive->mMeshData, IncludeTransform, ColorCode, Mirror ^ InvertNext, InvertNext, TextureMap, MeshDataType);
+//						else
 							MeshData.AddMeshDataNoDuplicateCheck(Primitive->mMeshData, IncludeTransform, ColorCode, Mirror ^ InvertNext, InvertNext, TextureMap, MeshDataType);
 					}
 					else
