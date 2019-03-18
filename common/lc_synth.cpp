@@ -362,10 +362,10 @@ void lcSynthInfo::CalculateCurveSections(const lcArray<lcPieceControlPoint>& Con
 			TotalSegmentLength += lcLength(CurvePoints[PointIdx] - CurvePoints[PointIdx + 1]);
 
 		lcVector3 StartUp;
-		if (mType != lcSynthType::STRING_BRAIDED)
-			StartUp = lcMul30(lcVector3(1.0f, 0.0f, 0.0f), StartTransform);
-		else
+		if (mType == lcSynthType::STRING_BRAIDED)
 			StartUp = lcMul30(lcVector3(0.0f, 1.0f, 0.0f), StartTransform);
+		else
+			StartUp = lcMul30(lcVector3(1.0f, 0.0f, 0.0f), StartTransform);
 		float Twist = GetSectionTwist(StartTransform, EndTransform);
 		int CurrentPointIndex = 0;
 
@@ -397,15 +397,15 @@ void lcSynthInfo::CalculateCurveSections(const lcArray<lcPieceControlPoint>& Con
 			Up = lcNormalize(lcCross(Side, Tangent));
 			StartUp = Up;
 
-			if (mType != lcSynthType::STRING_BRAIDED)
-				Sections.Add(lcMatrix44(lcMatrix33(Up, Tangent, Side), CurvePoints[CurrentPointIndex]));
-			else
+			if (mType == lcSynthType::STRING_BRAIDED)
 				Sections.Add(lcMatrix44(lcMatrix33(Tangent, Up, -Side), CurvePoints[CurrentPointIndex]));
+			else
+				Sections.Add(lcMatrix44(lcMatrix33(Up, Tangent, Side), CurvePoints[CurrentPointIndex]));
 
 			if (SectionCallback)
 				SectionCallback(CurvePoints[CurrentPointIndex], ControlPointIdx, t);
 
-			if (Sections.GetSize() == mNumSections + 2)
+			if (Sections.GetSize() >= mNumSections + 2)
 				break;
 
 			if (mCenterLength != 0.0f && (Sections.GetSize() == mNumSections / 2 + 1))
@@ -423,10 +423,10 @@ void lcSynthInfo::CalculateCurveSections(const lcArray<lcPieceControlPoint>& Con
 		lcMatrix44 EndTransform = lcMatrix44LeoCADToLDraw(ControlPoints[ControlPoints.GetSize() - 1].Transform);
 		EndTransform = lcMatrix44(lcMul(lcMul(lcMatrix33(mEnd.Transform), lcMatrix33(EndTransform)), lcMatrix33Scale(lcVector3(1.0f, -1.0f, 1.0f))), EndTransform.GetTranslation());
 		lcVector3 Position;
-		if (mType != lcSynthType::STRING_BRAIDED)
-			Position = lcMul31(lcVector3(0.0f, SectionLength, 0.0f), EndTransform);
-		else
+		if (mType == lcSynthType::STRING_BRAIDED)
 			Position = lcMul31(lcVector3(SectionLength, 0.0f, 0.0f), EndTransform);
+		else
+			Position = lcMul31(lcVector3(0.0f, SectionLength, 0.0f), EndTransform);
 		EndTransform.SetTranslation(Position);
 		Sections.Add(EndTransform);
 
