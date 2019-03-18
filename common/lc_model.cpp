@@ -2901,7 +2901,7 @@ bool lcModel::GetMoveRotateTransform(lcVector3& Center, lcMatrix33& RelativeRota
 		if (!Piece->IsSelected())
 			continue;
 
-		if (Piece->IsFocused() && Relative)
+		if (Piece->IsFocused() && (Relative || (Piece->GetFocusSection() >= LC_PIECE_SECTION_CONTROL_POINT_1 && Piece->GetFocusSection() <= LC_PIECE_SECTION_CONTROL_POINT_8)))
 		{
 			Center = Piece->GetRotationCenter();
 			RelativeRotation = Piece->GetRelativeRotation();
