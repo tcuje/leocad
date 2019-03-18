@@ -398,7 +398,16 @@ void lcSynthInfo::CalculateCurveSections(const lcArray<lcPieceControlPoint>& Con
 			StartUp = Up;
 
 			if (mType == lcSynthType::STRING_BRAIDED)
-				Sections.Add(lcMatrix44(lcMatrix33(Tangent, Up, -Side), CurvePoints[CurrentPointIndex]));
+			{
+				lcMatrix44 EndTransform = lcMatrix44(lcMatrix33(Tangent, Up, -Side), CurvePoints[CurrentPointIndex]);
+				if (Sections.GetSize() >= mNumSections + 1)
+				{
+					EndTransform = lcMatrix44LeoCADToLDraw(ControlPoints[ControlPoints.GetSize() - 1].Transform);
+					EndTransform = lcMatrix44(lcMul(lcMul(lcMatrix33(mEnd.Transform), lcMatrix33(EndTransform)), lcMatrix33Scale(lcVector3(1.0f, -1.0f, 1.0f))), EndTransform.GetTranslation());
+				}
+				EndTransform.SetTranslation(CurvePoints[CurrentPointIndex]);
+				Sections.Add(EndTransform);
+			}
 			else
 				Sections.Add(lcMatrix44(lcMatrix33(Up, Tangent, Side), CurvePoints[CurrentPointIndex]));
 
