@@ -11,6 +11,7 @@ enum class lcSynthType
 	FLEXIBLE_AXLE,
 	STRING_BRAIDED,
 	SHOCK_ABSORBER,
+	CHAIN,
 	ACTUATOR
 };
 
@@ -51,6 +52,7 @@ protected:
 	void AddRibbedHoseParts(lcMemFile& File, const lcArray<lcMatrix44>& Sections) const;
 	void AddFlexibleAxleParts(lcMemFile& File, lcLibraryMeshData& MeshData, const lcArray<lcMatrix44>& Sections) const;
 	void AddStringBraidedParts(lcMemFile& File, lcLibraryMeshData& MeshData, lcArray<lcMatrix44>& Sections) const;
+	void AddChainParts(lcMemFile& File, lcArray<lcMatrix44>& Sections) const;
 	void AddShockAbsorberParts(lcMemFile& File, lcArray<lcMatrix44>& Sections) const;
 	void AddActuatorParts(lcMemFile& File, lcArray<lcMatrix44>& Sections) const;
 

@@ -84,6 +84,7 @@ void lcSynthInit()
 		{ "76384.dat",    lcSynthType::STRING_BRAIDED,   200.00f,  46 }, // String Braided 11L with End Studs
 		{ "75924.dat",    lcSynthType::STRING_BRAIDED,   400.00f,  96 }, // String Braided 21L with End Studs
 		{ "572C02.dat",   lcSynthType::STRING_BRAIDED,   800.00f, 196 }, // String Braided 41L with End Studs
+//		{ "30104.dat",    lcSynthType::CHAIN,            320.00f,  23 }, // Minifig Chain 17L with 17L Span Straight
 		{ "73129.dat",    lcSynthType::SHOCK_ABSORBER,   110.00f,   1 }, // Technic Shock Absorber 6.5L
 		{ "41838.dat",    lcSynthType::SHOCK_ABSORBER,   110.00f,   1 }, // Technic Shock Absorber 6.5L Soft
 		{ "76138.dat",    lcSynthType::SHOCK_ABSORBER,   110.00f,   1 }, // Technic Shock Absorber 6.5L Stiff
@@ -148,6 +149,13 @@ lcSynthInfo::lcSynthInfo(lcSynthType Type, float Length, int NumSections, PieceI
 		mCurve = true;
 		break;
 
+	case lcSynthType::CHAIN:
+		EdgeSectionLength = 20.0f;
+		MidSectionLength = 13.5f;
+		mRigidEdges = false;
+		mCurve = true;
+		break;
+
 	case lcSynthType::SHOCK_ABSORBER:
 	case lcSynthType::ACTUATOR:
 		EdgeSectionLength = 0.0f;
@@ -168,9 +176,10 @@ lcSynthInfo::lcSynthInfo(lcSynthType Type, float Length, int NumSections, PieceI
 		break;
 
 	case lcSynthType::FLEX_SYSTEM_HOSE:
+	case lcSynthType::STRING_BRAIDED:
+	case lcSynthType::CHAIN:
 	case lcSynthType::SHOCK_ABSORBER:
 	case lcSynthType::ACTUATOR:
-	case lcSynthType::STRING_BRAIDED:
 		mStart.Transform = lcMatrix44Identity();
 		mMiddle.Transform = lcMatrix44Identity();
 		mEnd.Transform = lcMatrix44Identity();
@@ -208,6 +217,10 @@ void lcSynthInfo::GetDefaultControlPoints(lcArray<lcPieceControlPoint>& ControlP
 
 	case lcSynthType::STRING_BRAIDED:
 		Scale = 12.0f;
+		break;
+
+	case lcSynthType::CHAIN:
+		Scale = 15.0f;
 		break;
 
 	case lcSynthType::SHOCK_ABSORBER:
@@ -937,6 +950,26 @@ void lcSynthInfo::AddStringBraidedParts(lcMemFile& File, lcLibraryMeshData& Mesh
 	}
 }
 
+void lcSynthInfo::AddChainParts(lcMemFile& File, lcArray<lcMatrix44>& Sections) const
+{
+	char Line[256];
+	for (int SectionIdx = 1; SectionIdx < Sections.GetSize() - 1; SectionIdx++)
+	{
+		const lcMatrix44& Transform = Sections[SectionIdx];
+
+		const char* PartName;
+		if (SectionIdx == 0 || SectionIdx == Sections.GetSize() - 1)
+			PartName = "30104k01.dat";
+		else
+			PartName = "30104k02.dat";
+
+		sprintf(Line, "1 16 %f %f %f %f %f %f %f %f %f %f %f %f %s\n", Transform[3][0], Transform[3][1], Transform[3][2], Transform[0][0], Transform[1][0], Transform[2][0],
+				Transform[0][1], Transform[1][1], Transform[2][1], Transform[0][2], Transform[1][2], Transform[2][2], PartName);
+
+		File.WriteBuffer(Line, strlen(Line));
+	}
+}
+
 void lcSynthInfo::AddShockAbsorberParts(lcMemFile& File, lcArray<lcMatrix44>& Sections) const
 {
 	char Line[256];
@@ -1018,6 +1051,10 @@ lcMesh* lcSynthInfo::CreateMesh(const lcArray<lcPieceControlPoint>& ControlPoint
 
 	case lcSynthType::STRING_BRAIDED:
 		AddStringBraidedParts(File, MeshData, Sections);
+		break;
+
+	case lcSynthType::CHAIN:
+		AddChainParts(File, Sections);
 		break;
 
 	case lcSynthType::SHOCK_ABSORBER:
